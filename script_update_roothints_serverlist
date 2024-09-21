@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# Télécharger le fichier root.hints
+wget ftp://ftp.internic.net/domain/named.cache -O /etc/unbound/root.hints
+
+# Télécharger la liste des serveurs
+wget -q -O /etc/unbound/local.d/unbound_add_servers 'http://pgl.yoyo.org/adservers/serverlist.php?hostformat=unbound&showintro=0&mimetype=plaintext'
+
+# Redémarrer le service Unbound
+systemctl restart unbound
