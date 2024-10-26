@@ -613,26 +613,30 @@ include: /etc/unbound/conf.d/*.conf
 # 	name: "NORDVPN"
 # 	forward-host: fwd.example.com
 #
-forward-zone:
-    name: "."
-    forward-addr: 103.86.96.100
-    forward-addr: 103.86.96.100@853
-    forward-addr: 103.86.99.100
-    forward-addr: 103.86.99.100@853
-    forward-ssl-upstream: yes
-    forward-first: no
-
-
 # forward-zone:
-# 	name: "QUAD9"
+#    name: "QUAD9"
+#    
+#    forward-addr: 9.9.9.9@853
+#    forward-addr: 2620:fe::fe@853
+    # forward-addr: 103.86.96.100
+    # forward-addr: 103.86.96.100@853
+    # forward-addr: 103.86.99.100
+    # forward-addr: 103.86.99.100@853
+    # forward-ssl-upstream: yes
+#    forward-first: no
+
+
+ forward-zone:
+ 	name: "QUAD9"
 # 	forward-host: fwd.example.com
 # forward-zone:
 #    name: "."
-#    forward-ssl-upstream: yes
-#    forward-addr: 9.9.9.9@853
-#    forward-addr: 149.112.112.112@853
-#    forward-addr: 2620:fe::fe@853
-#    forward-addr: 2620:fe::9@853
+    forward-ssl-upstream: yes
+    forward-addr: 9.9.9.11@853
+    forward-addr: 149.112.112.112@853
+    forward-addr: 2620:fe::fe@853
+    forward-first: no
+    forward-addr: 2620:fe::9@853
 # You can now also dynamically create and delete forward-zone's using
 # unbound-control forward_add domain.com 1.2.3.4 5.6.7.8
 # unbound-control forward_remove domain.com 1.2.3.4 5.6.7.8
