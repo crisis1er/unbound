@@ -1,12 +1,4 @@
-#wget -q -O- 'http://pgl.yoyo.org/adservers/serverlist.php?hostformat=unbound&showintro=0&mimetype=plaintext' > /etc/unbound/local.d/unbound_add_servers
-#chown unbound:unbound /etc/unbound/local.d/unbound_add_servers
-#nano /etc/crontab
-#systemctl restart NetworkManager
-#systemctl stop unbound
-#touch /var/log/unbound.log
-#chmod 755 /var/log/unbound.log
-#zypper install nscd
-#rcnscd restart
+
 #
 # See unbound.conf(5) man page.
 #
