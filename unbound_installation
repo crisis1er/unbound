@@ -1,0 +1,19 @@
+## Partie 1 : Installation
+
+zypper update -y
+zypper install -y unbound
+mkdir -p /etc/unbound/{local.d,conf.d,keys.d}
+curl -o /etc/unbound/root.hints https://www.internic.net/domain/named.cache
+unbound-anchor -a "/var/lib/unbound/root.key"
+unbound-control-setup
+chown -R unbound:unbound /etc/unbound /var/lib/unbound
+
+wget -q -O- 'http://pgl.yoyo.org/adservers/serverlist.php?hostformat=unbound&showintro=0&mimetype=plaintext' > /etc/unbound/local.d/unbound_ad_servers
+chown unbound:unbound /etc/unbound/local.d/unbound_ad_servers
+touch /var/log/unbound.log
+chmod 755 /var/log/unbound.log
+systemctl enable unbound
+systemctl start unbound
+systemctl restart NetworkManager
+rcnscd restart
+dig @127.0.0.1 example.com
