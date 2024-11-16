@@ -1,4 +1,3 @@
-
 #wget -q -O- 'http://pgl.yoyo.org/adservers/serverlist.php?hostformat=unbound&showintro=0&mimetype=plaintext' > /etc/unbound/local.d/unbound_add_servers
 #chown unbound:unbound /etc/unbound/local.d/unbound_add_servers
 #nano /etc/crontab
@@ -82,7 +81,7 @@ server:
 
 	# number of ports to allocate per thread, determines the size of the
 	# port range that can be open simultaneously.
-	outgoing-range: 8192
+	outgoing-range: 200
 
 	# permit unbound to use this port number or port range for
 	# making outgoing queries, using an outgoing interface.
@@ -153,7 +152,7 @@ server:
 
 	# the time to live (TTL) value lower bound, in seconds. Default 0.
 	# If more than an hour could easily give trouble due to stale data.
-	cache-min-ttl: 3600
+	cache-min-ttl: 300
 
 	# the time to live (TTL) value cap for RRsets and messages in the
 	# cache. Items are not cached for longer. In seconds.
@@ -310,10 +309,10 @@ server:
 	# target-fetch-policy: "3 2 1 0 0"
 
 	# Harden against very small EDNS buffer sizes.
-	# harden-short-bufsize: no
+	# harden-short-bufsize: yes
 
 	# Harden against unseemly large queries.
-	# harden-large-queries: no
+	# harden-large-queries: yes
 
 	# Harden against out of zone rrsets, to avoid spoofing attempts.
 	harden-glue: yes
@@ -331,7 +330,7 @@ server:
 	# infrastructure data.  Validates the replies (if possible).
 	# Default off, because the lookups burden the server.  Experimental
 	# implementation of draft-wijngaards-dnsext-resolver-side-mitigation.
-	harden-referral-path: no
+	harden-referral-path: yes
 
 	# Use 0x20-encoded random bits in the query to foil spoof attempts.
 	# This feature is an experimental implementation of draft dns-0x20.
@@ -391,6 +390,7 @@ server:
         # the response without waiting for the actual resolution to finish. The
         # actual resolution answer ends up in the cache later on.
         serve-expired: yes
+        serve-expired-ttl: 3600
 
 	# module configuration of the server. A string with identifiers
 	# separated by spaces. "iterator" or "validator iterator"
