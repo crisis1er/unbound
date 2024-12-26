@@ -29,13 +29,6 @@ Persistent=true
 WantedBy=timers.target
  
 
-=== Rendre le script exécutable ===
-  '''# sudo chmod +x /etc/cron.weekly/update_unbound '''
-
-
-
-
-
 Service SystemD : maj roots.hints
 nano /etc/systemd/system/ update-unbound-roots.service 
 [Unit] 
@@ -65,16 +58,6 @@ Persistent=true
 [Install] 
 WantedBy=timers.target
  
-
-
-
-
-
-
-
-
-
-
 
 nano /etc/systemd/system/ update-squid-ads.service 
 [Unit] 
