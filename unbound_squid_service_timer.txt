@@ -1,0 +1,106 @@
+﻿
+Service SystemD : filtre antipub
+nano /etc/systemd/system/ update-unbound-ads.service 
+[Unit] 
+Description=Update Unbound ad blocking lists 
+After=network-online.target 
+ 
+[Service] 
+Type=oneshot 
+ExecStart=/usr/bin/wget -q -O /etc/unbound/local.d/unbound_add_servers 'http://pgl.yoyo.org/adservers/serverlist.php?hostformat=unbound&showintro=0&mimetype=plaintext' 
+ExecStart=/usr/bin/systemctl restart unbound 
+Restart=on-failure 
+RestartSec=30s 
+ 
+[Install] 
+WantedBy=multi-user.target 
+
+Timer SystemD : filtre antipub
+nano /etc/systemd/system/ update-unbound-ads.timer 
+[Unit] 
+Description=Weekly update of Unbound ad blocking lists 
+ 
+[Timer] 
+OnCalendar=weekly 
+RandomizedDelaySec=3600 
+Persistent=true 
+ 
+[Install] 
+WantedBy=timers.target
+ 
+
+=== Rendre le script exécutable ===
+  '''# sudo chmod +x /etc/cron.weekly/update_unbound '''
+
+
+
+
+
+Service SystemD : maj roots.hints
+nano /etc/systemd/system/ update-unbound-roots.service 
+[Unit] 
+Description=Update Unbound root hints 
+After=network-online.target 
+ 
+[Service] 
+Type=oneshot 
+ExecStart=/usr/bin/wget ftp://ftp.internic.net/domain/named.cache -O /etc/unbound/root.hints 
+ExecStart=/usr/bin/systemctl restart unbound 
+Restart=on-failure 
+RestartSec=30s 
+ 
+[Install] 
+WantedBy=multi-user.target 
+
+Timer SystemD : maj roots.hints
+nano /etc/systemd/system/ update-unbound-roots.timer 
+[Unit] 
+Description=Monthly update of Unbound root hints 
+ 
+[Timer] 
+OnCalendar=monthly 
+RandomizedDelaySec=3600 
+Persistent=true 
+ 
+[Install] 
+WantedBy=timers.target
+ 
+
+
+
+
+
+
+
+
+
+
+
+nano /etc/systemd/system/ update-squid-ads.service 
+[Unit] 
+Description=Update Squid ads blocklist 
+After=network-online.target 
+ 
+[Service] 
+Type=oneshot 
+ExecStart=/usr/bin/wget -O /etc/squid/ads_list.txt 'http://pgl.yoyo.org/adservers/serverlist.php?hostformat=squid-dstdom-regex&showintro=1&mimetype=plaintext' 
+ExecStart=/usr/bin/systemctl reload squid 
+Restart=on-failure 
+RestartSec=30s 
+ 
+[Install] 
+WantedBy=multi-user.target 
+
+nano /etc/systemd/system/ update-squid-ads.timer 
+[Unit] 
+Description=Monthly update of Squid ads blocklist 
+ 
+[Timer] 
+OnCalendar=monthly 
+RandomizedDelaySec=3600 
+Persistent=true 
+ 
+[Install] 
+WantedBy=timers.target
+ 
+
