@@ -1,3 +1,7 @@
+CREATION DU SCRIPT
+
+nano /etc/cron.weekly/update_unbound
+
 #!/bin/bash
 
 # Télécharger le fichier root.hints
@@ -8,3 +12,6 @@ wget -q -O /etc/unbound/local.d/unbound_add_servers 'http://pgl.yoyo.org/adserve
 
 # Redémarrer le service Unbound
 systemctl restart unbound
+
+=== Rendre le script exécutable ===
+  '''# sudo chmod +x /etc/cron.weekly/update_unbound 
