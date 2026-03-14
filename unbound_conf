@@ -22,7 +22,7 @@ server:
     # Hôte local + réseau virtuel libvirt (VMs)
     interface: 127.0.0.1
     interface: ::1
-    interface: 192.168.122.1     # ← NOUVEAU : virbr0 pour VMs
+    interface: br0
     interface-automatic: no
     port: 53
 
@@ -67,10 +67,9 @@ server:
 
     # ─── CONTRÔLE D'ACCÈS ────────────────────────────────────────
     access-control: 127.0.0.0/8 allow
-    access-control: 192.168.1.0/24 allow
-    access-control: 192.168.122.0/24 allow  # ← NOUVEAU : VMs libvirt
-    access-control: 0.0.0.0/0 refuse
     access-control: ::1 allow
+    access-control: 192.168.1.0/24 allow
+    access-control: 0.0.0.0/0 refuse
     # access-control: fe80::/10 allow
     # access-control: ::0/0 refuse
 
@@ -126,7 +125,7 @@ server:
     val-log-level: 1
 
     # ─── INCLUSIONS ──────────────────────────────────────────────
-    include: /etc/unbound/local.d/unbound_add_servers
+    include: "/etc/unbound/local.d/unbound_add_servers.conf"
     include: /etc/unbound/local.d/*.conf
     include: /etc/unbound/conf.d/*.conf
 
