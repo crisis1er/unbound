@@ -50,13 +50,14 @@ Avant de commencer, assurez-vous que votre système est à jour et que vous disp
 - `curl` installé (`zypper in curl`)
 - Connexion Internet active
 
-> ⚠️ Toutes les commandes de cette procédure sont à exécuter en tant que **root**.
+> [!WARNING]
+> Toutes les commandes de cette procédure sont à exécuter en tant que **root**.
 
 ---
 
 ## 2. Installation du paquet
 
-Installez Unbound via le gestionnaire de paquets zypper. Vérifiez ensuite la version installée pour vous assurer d'avoir une version récente corrigée des CVE connues.
+Installez Unbound via zypper. Vérifiez ensuite la version installée pour vous assurer d'avoir une version récente corrigée des CVE connues.
 
 ```bash
 su
@@ -64,8 +65,11 @@ zypper in unbound
 unbound -V
 ```
 
-> 📦 Dernière version disponible dans les dépôts : https://software.opensuse.org/package/unbound  
-> ⚠️ Mettre à jour vers la version **1.24.2 minimum** — plusieurs CVE critiques affectent les versions antérieures (CVE-2025-11411, CVE-2025-5994).
+> [!WARNING]
+> Mettre à jour vers la version **1.24.2 minimum** — plusieurs CVE critiques affectent les versions antérieures (CVE-2025-11411, CVE-2025-5994).
+
+> [!NOTE]
+> Dernière version disponible dans les dépôts : https://software.opensuse.org/package/unbound
 
 ---
 
@@ -90,13 +94,14 @@ Le fichier `root.hints` contient la liste des serveurs racines DNS. Unbound l'ut
 wget https://www.internic.net/domain/named.cache -O /etc/unbound/root.hints
 ```
 
-Vérifiez ensuite que la directive suivante est bien présente dans votre `unbound.conf` :
+Vérifiez ensuite que la directive suivante est bien présente dans `unbound.conf` :
 
 ```conf
 root-hints: "/etc/unbound/root.hints"
 ```
 
-> ⚠️ Utiliser exclusivement l'URL **HTTPS**. L'ancienne URL FTP `ftp://ftp.internic.net/domain/named.cache` est dépréciée.
+> [!WARNING]
+> Utiliser exclusivement l'URL **HTTPS**. L'ancienne URL FTP `ftp://ftp.internic.net/domain/named.cache` est dépréciée.
 
 ---
 
@@ -117,21 +122,27 @@ Vérifiez que la directive suivante est présente dans `unbound.conf` :
 include: "/etc/unbound/local.d/unbound_add_servers.conf"
 ```
 
-> ⚠️ Le fichier **doit** porter l'extension `.conf` — Unbound ignore silencieusement les fichiers sans extension dans `local.d/`.  
-> ⚠️ Utiliser `curl -f` plutôt que `wget -O` : en cas d'échec réseau, wget écrase le fichier existant par un fichier vide, désactivant silencieusement le filtre antipub.  
-> ℹ️ Le blocage antipub peut interférer avec certains sites (liens sponsorisés). Pour désactiver temporairement, commentez la ligne `include:` correspondante dans `unbound.conf` puis rechargez avec `unbound-control reload`.
+> [!WARNING]
+> Le fichier **doit** porter l'extension `.conf` — Unbound ignore silencieusement les fichiers sans extension dans `local.d/`.
+
+> [!WARNING]
+> Utiliser `curl -f` plutôt que `wget -O` : en cas d'échec réseau, wget écrase le fichier existant par un fichier vide, désactivant silencieusement le filtre antipub.
+
+> [!NOTE]
+> Le blocage antipub peut interférer avec certains sites (liens sponsorisés). Pour désactiver temporairement, commentez la ligne `include:` dans `unbound.conf` puis rechargez avec `unbound-control reload`.
 
 ---
 
 ## 6. Clefs TLS
 
-La commande `unbound-control-setup` génère les certificats TLS nécessaires à l'interface de contrôle à distance (`unbound-control`). Cette étape est obligatoire pour pouvoir utiliser `unbound-control reload` et les timers systemd.
+La commande `unbound-control-setup` génère les certificats TLS nécessaires à l'interface de contrôle (`unbound-control`). Cette étape est obligatoire pour utiliser `unbound-control reload` et les timers systemd.
 
 ```bash
 unbound-control-setup
 ```
 
-> ℹ️ Ces clefs servent **uniquement** à l'interface de contrôle. Pour activer DNS-over-TLS (DoT) ou DNS-over-HTTPS (DoH), utilisez les directives `tls-service-key:` et `tls-service-pem:` dans `unbound.conf`.
+> [!NOTE]
+> Ces clefs servent **uniquement** à l'interface de contrôle. Pour activer DoT ou DoH, utilisez les directives `tls-service-key:` et `tls-service-pem:` dans `unbound.conf`.
 
 ---
 
@@ -152,7 +163,7 @@ killall dnsmasq
 systemctl stop systemd-resolved && systemctl disable systemd-resolved
 ```
 
-Vérifiez ensuite que `/etc/resolv.conf` pointe bien vers Unbound :
+Vérifiez que `/etc/resolv.conf` pointe bien vers Unbound :
 
 ```bash
 cat /etc/resolv.conf
@@ -172,7 +183,8 @@ Rechargez NetworkManager pour appliquer les changements :
 systemctl restart NetworkManager
 ```
 
-> ℹ️ Sur openSUSE avec KDE et NetworkManager, le mode **standalone** (désactivation complète de systemd-resolved) est recommandé. Le mode stub est possible mais plus complexe à maintenir.
+> [!NOTE]
+> Sur openSUSE avec KDE et NetworkManager, le mode **standalone** (désactivation complète de systemd-resolved) est recommandé.
 
 ---
 
@@ -187,10 +199,10 @@ nano /etc/unbound/unbound.conf
 
 📄 Fichier de référence commenté disponible ici : [unbound.conf sur GitHub](https://github.com/crisis1er/unbound/blob/main/unbound_conf)
 
-Ce fichier inclut les options suivantes :
+Ce fichier inclut :
 
 - Résolution récursive pure **ou** forward-zone DoT vers Quad9 (au choix)
-- QNAME minimisation activée (mode strict disponible depuis 1.22.0)
+- QNAME minimisation activée (mode strict depuis 1.22.0)
 - DNSSEC activé
 - Optimisé pour CPU 4 cœurs
 - Paramètres d'anonymisation activés
@@ -202,8 +214,11 @@ unbound-checkconf /etc/unbound/unbound.conf
 # Attendu : unbound-checkconf: no errors in /etc/unbound/unbound.conf
 ```
 
-> ⚠️ Ne jamais utiliser `name: "QUAD9"` dans une forward-zone — la zone universelle est obligatoirement `name: "."`.  
-> ⚠️ `forward-ssl-upstream` est déprécié depuis la version 1.9.1 — utiliser exclusivement `forward-tls-upstream: yes`.
+> [!WARNING]
+> Ne jamais utiliser `name: "QUAD9"` dans une forward-zone — la zone universelle est obligatoirement `name: "."`.
+
+> [!WARNING]
+> `forward-ssl-upstream` est déprécié depuis la version 1.9.1 — utiliser exclusivement `forward-tls-upstream: yes`.
 
 ---
 
@@ -301,7 +316,7 @@ Persistent=true
 WantedBy=timers.target
 ```
 
-### Activation des timers
+### Activation
 
 ```bash
 systemctl daemon-reload
@@ -316,19 +331,18 @@ systemctl status update-unbound-ads.service
 systemctl list-timers update-unbound-ads.timer update-unbound-roots.timer
 ```
 
-> ⚠️ `Restart=on-failure` est incompatible avec `Type=oneshot` et doit être absent des fichiers service. La gestion des tâches manquées est assurée par `Persistent=true` dans le timer.
+> [!WARNING]
+> `Restart=on-failure` est incompatible avec `Type=oneshot`. La gestion des tâches manquées est assurée par `Persistent=true` dans le timer.
 
 ---
 
 ## 12. Tests de fonctionnement
 
-Une fois Unbound démarré, vérifiez son bon fonctionnement avec les commandes suivantes.
-
 ```bash
 # Syntaxe de configuration
 unbound-checkconf /etc/unbound/unbound.conf
 
-# Validation DNSSEC (le mot "secure" doit apparaître)
+# Validation DNSSEC ("secure" doit apparaître)
 unbound-host com. -f /var/lib/unbound/root.key -v
 unbound-host dnssec.cz -f /var/lib/unbound/root.key -v
 
