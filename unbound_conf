@@ -1,66 +1,41 @@
-#
 # unbound.conf — openSUSE Tumbleweed
-# Corrections appliquées le 03/03/2026
+# Corrections appliquées le 14/03/2026
+# VMs libvirt + hôte → Quad9 DoT
 # Voir : https://fr.opensuse.org/Unbound
 # Doc officielle : https://nlnetlabs.nl/documentation/unbound/unbound.conf/
-#
-# ─────────────────────────────────────────────────────────────────
-# CORRECTIONS APPLIQUÉES :
-# [C1]  forward-ssl-upstream → forward-tls-upstream (déprécié 1.9.1)
-# [C2]  name: "QUAD9" → name: "." (zone invalide)
-# [C3]  tls-cert-bundle ajouté (vérification certificat DoT)
-# [C4]  Double include local.d/*.conf supprimé (erreur duplicate zone)
-# [C5]  access-control 192.168.0.1/24 → 192.168.1.0/24 (mauvais subnet)
-# [C6]  use-syslog: no (conflit avec logfile:)
-# [C7]  forward-addr avec SNI #dns.quad9.net (vérification TLS complète)
-# [C8]  outgoing-range: 200 → 4096 (50 ports/thread → 1024 ports/thread)
-# [C9]  9.9.9.11 → 9.9.9.9 (ECS désactivé, confidentialité préservée)
-# [C10] statistics-interval: 0 → 3600 (cohérence Munin)
-# [C11] qname-minimisation-strict: yes ajouté (confidentialité renforcée)
-# [C12] Commentaire URL FTP obsolète mis à jour
-# ─────────────────────────────────────────────────────────────────
 
 server:
 
     # ─── VERBOSITÉ ───────────────────────────────────────────────
-    # 1 = production | 2 = debug (logs volumineux)
     verbosity: 1
 
     # ─── STATISTIQUES (Munin / unbound-control stats) ────────────
-    # [C10] statistics-interval: 0 désactivait les stats → Munin inopérant
     statistics-interval: 3600
     statistics-cumulative: yes
     extended-statistics: yes
-    # Nouveauté 1.22.0+ : supprime les compteurs à zéro dans les stats
     statistics-inhibit-zero: yes
 
     # ─── THREADS ─────────────────────────────────────────────────
     num-threads: 4
 
     # ─── INTERFACES D'ÉCOUTE ─────────────────────────────────────
+    # Hôte local + réseau virtuel libvirt (VMs)
     interface: 127.0.0.1
     interface: ::1
-    # DoT local (décommenter si vous servez DoT en local) :
-    # interface: 127.0.0.1@853
-    # tls-service-key: "/etc/unbound/tls/server.key"   # [C12] ssl- → tls-
-    # tls-service-pem: "/etc/unbound/tls/server.pem"
-
+    interface: 192.168.122.1     # ← NOUVEAU : virbr0 pour VMs
     interface-automatic: no
     port: 53
 
+    # DoT local (optionnel)
+    # interface: 127.0.0.1@853
+    # tls-service-key: "/etc/unbound/tls/server.key"
+    # tls-service-pem: "/etc/unbound/tls/server.pem"
+
     # ─── CERTIFICATS TLS UPSTREAM ────────────────────────────────
-    # [C3] AJOUT CRITIQUE : sans cette directive, le certificat
-    #      du serveur DoT upstream n'est PAS vérifié (risque MITM).
-    #      Chemin openSUSE Tumbleweed :
     tls-cert-bundle: "/etc/ssl/ca-bundle.pem"
 
     # ─── PORTS SORTANTS ──────────────────────────────────────────
-    # [C8] outgoing-range: 200 → 4096
-    #      Formule : outgoing-range / num-threads = ports par thread
-    #      Avant : 200/4 = 50 ports/thread (saturation rapide)
-    #      Après : 4096/4 = 1024 ports/thread
     outgoing-range: 4096
-    # outgoing-interface: 192.0.2.153
 
     # ─── BUFFERS UDP/TCP ─────────────────────────────────────────
     so-rcvbuf: 8m
@@ -70,7 +45,6 @@ server:
     msg-buffer-size: 65552
 
     # ─── CACHES ──────────────────────────────────────────────────
-    # Règle : rrset-cache-size = 2 × msg-cache-size
     msg-cache-size: 50m
     msg-cache-slabs: 8
     rrset-cache-size: 100m
@@ -83,7 +57,6 @@ server:
     # ─── TTL ─────────────────────────────────────────────────────
     cache-min-ttl: 300
     cache-max-ttl: 86400
-
     num-queries-per-thread: 4096
 
     # ─── PROTOCOLES ──────────────────────────────────────────────
@@ -93,14 +66,11 @@ server:
     do-tcp: yes
 
     # ─── CONTRÔLE D'ACCÈS ────────────────────────────────────────
-    # [C5] 192.168.0.1/24 → 192.168.1.0/24
-    #      Votre LAN est 192.168.1.0/24 (machine : 192.168.1.44)
-    #      L'ancienne entrée ne couvrait PAS votre réseau local.
     access-control: 127.0.0.0/8 allow
     access-control: 192.168.1.0/24 allow
+    access-control: 192.168.122.0/24 allow  # ← NOUVEAU : VMs libvirt
     access-control: 0.0.0.0/0 refuse
     access-control: ::1 allow
-    # Décommenter si vous utilisez des clients IPv6 sur le LAN :
     # access-control: fe80::/10 allow
     # access-control: ::0/0 refuse
 
@@ -111,26 +81,16 @@ server:
     pidfile: "/var/run/unbound/unbound.pid"
 
     # ─── LOGS ────────────────────────────────────────────────────
-    # [C6] use-syslog: yes entrait en conflit avec logfile:
-    #      use-syslog: yes écrase logfile → logs perdus.
-    #      Choix : fichier dédié (recommandé avec votre setup KDE/NM).
-    #      Alternative : passer use-syslog: yes et commenter logfile.
     use-syslog: no
     logfile: "/var/log/unbound.log"
     log-time-ascii: yes
-    # log-queries: no
 
     # ─── ROOT HINTS ──────────────────────────────────────────────
-    # [C12] Commentaire FTP obsolète mis à jour :
-    # Télécharger via : https://www.internic.net/domain/named.cache
     root-hints: "/etc/unbound/root.hints"
 
     # ─── CONFIDENTIALITÉ DNS ─────────────────────────────────────
     qname-minimisation: yes
-    # [C11] AJOUT : mode strict — évite la divulgation du FQDN
-    #       en cas de réponse NXDOMAIN intermédiaire (1.22.0+)
     qname-minimisation-strict: yes
-
     hide-identity: yes
     hide-version: yes
     identity: "DNS"
@@ -141,19 +101,12 @@ server:
     harden-below-nxdomain: yes
     harden-referral-path: yes
     harden-algo-downgrade: yes
-
-    # Encodage 0x20 anti-cache-poisoning
-    # Note : GoDaddy a corrigé l'incompatibilité depuis 2022.
-    # NLnet Labs recommande de maintenir cette option.
     use-caps-for-id: yes
-
     aggressive-nsec: yes
     unwanted-reply-threshold: 10000
     do-not-query-localhost: yes
-
     private-address: 192.168.0.0/16
     private-address: fe80::/10
-
     ratelimit: 1000
     delay-close: 10000
 
@@ -170,87 +123,31 @@ server:
     auto-trust-anchor-file: "/var/lib/unbound/root.key"
     val-clean-additional: yes
     val-permissive-mode: no
-    # val-log-level: 2 en debug | 1 en production
     val-log-level: 1
 
     # ─── INCLUSIONS ──────────────────────────────────────────────
-    # Filtre antipub
     include: /etc/unbound/local.d/unbound_add_servers
-    # [C4] local.d/*.conf était inclus 2 fois → erreur duplicate zone
-    #      Une seule inclusion ici, le bloc en fin de fichier supprimé.
     include: /etc/unbound/local.d/*.conf
-
+    include: /etc/unbound/conf.d/*.conf
 
 # ─────────────────────────────────────────────────────────────────
 # CONTRÔLE À DISTANCE
 # ─────────────────────────────────────────────────────────────────
 remote-control:
     control-enable: yes
-    # control-interface: 127.0.0.1
-    # control-port: 953
     server-key-file:  "/etc/unbound/unbound_server.key"
     server-cert-file: "/etc/unbound/unbound_server.pem"
     control-key-file: "/etc/unbound/unbound_control.key"
     control-cert-file: "/etc/unbound/unbound_control.pem"
 
-
 # ─────────────────────────────────────────────────────────────────
-# ZONES DE CONFIGURATION SUPPLÉMENTAIRES
+# FORWARD ZONE — DNS-over-TLS vers Quad9 (MODE B)
 # ─────────────────────────────────────────────────────────────────
-# [C4] include: /etc/unbound/local.d/*.conf SUPPRIMÉ ICI (doublon)
-include: /etc/unbound/conf.d/*.conf
-
-
-# ─────────────────────────────────────────────────────────────────
-# FORWARD ZONE — DNS-over-TLS vers Quad9
-# ─────────────────────────────────────────────────────────────────
-#
-# ♦ CHOIX ARCHITECTURAL — décommenter le bloc souhaité :
-#
-#   MODE A : Résolution récursive pure (sans forwarder)
-#            → le plus privé, Unbound contacte les serveurs racines
-#            → commenter tout le bloc forward-zone ci-dessous
-#
-#   MODE B : DoT vers Quad9 (actif ci-dessous)
-#            → requêtes chiffrées TLS vers Quad9
-#            → Quad9 filtre les domaines malveillants
-#            → dépend de la disponibilité de Quad9
-#
-#   MODE C : VPN (décommenter forward-addr de votre VPN)
-#            → remplacer les adresses Quad9 par l'IP DNS de votre VPN
-#            → ne pas utiliser forward-tls-upstream avec un VPN sans TLS
-
 forward-zone:
-    # [C2] name: "QUAD9" → "." (zone universelle obligatoire)
-    #      "QUAD9" n'est pas un domaine valide → aucune requête forwardée
     name: "."
-
-    # [C1] forward-ssl-upstream → forward-tls-upstream
-    #      forward-ssl-upstream est déprécié depuis Unbound 1.9.1
     forward-tls-upstream: yes
-
-    # [C7] SNI (#dns.quad9.net) ajouté sur chaque adresse
-    #      Sans SNI, le nom du certificat TLS n'est pas vérifié
-    #      même si tls-cert-bundle est configuré
-
-    # [C9] 9.9.9.11 → 9.9.9.9
-    #      9.9.9.11 = Quad9 avec EDNS Client Subnet (ECS activé)
-    #                 → votre IP partielle est transmise aux serveurs autoritaires
-    #      9.9.9.9  = Quad9 sans ECS → confidentialité préservée
-    #
-    # Quad9 IPv4 — avec blocage malware, sans ECS :
     forward-addr: 9.9.9.9@853#dns.quad9.net
     forward-addr: 149.112.112.112@853#dns.quad9.net
-    # Quad9 IPv6 — avec blocage malware, sans ECS :
     forward-addr: 2620:fe::fe@853#dns.quad9.net
     forward-addr: 2620:fe::9@853#dns.quad9.net
-
     forward-first: no
-
-    # ─── Alternative : Quad9 sans filtrage (si vous préférez) ────
-    # forward-addr: 9.9.9.10@853#dns.quad9.net
-    # forward-addr: 149.112.112.10@853#dns.quad9.net
-
-    # ─── Alternative : VPN (décommenter et adapter) ──────────────
-    # forward-tls-upstream: no
-    # forward-addr: <IP_DNS_VPN>
