@@ -1,11 +1,11 @@
-# unbound — openSUSE Tumbleweed
+# unbound-tumbleweed-config
 
-![Unbound](https://img.shields.io/badge/Unbound-1.x-0078D4?style=flat)
-![Platform](https://img.shields.io/badge/platform-openSUSE%20Tumbleweed-73BA25?style=flat&logo=opensuse&logoColor=white)
-![License](https://img.shields.io/badge/license-MIT-green?style=flat)
-![DNSSEC](https://img.shields.io/badge/DNSSEC-enabled-blue?style=flat)
-![DoT](https://img.shields.io/badge/DNS--over--TLS-Quad9-purple?style=flat)
-![DoH](https://img.shields.io/badge/DoH-local%20via%20Caddy-00ADD8?style=flat)
+![Unbound](https://img.shields.io/badge/Unbound-1.x-0078D4)
+![Platform](https://img.shields.io/badge/platform-openSUSE%20Tumbleweed-73BA25)
+![License](https://img.shields.io/badge/license-MIT-green)
+![DNSSEC](https://img.shields.io/badge/DNSSEC-validated-blue)
+![DoT](https://img.shields.io/badge/DNS--over--TLS-Quad9-purple)
+![DoH](https://img.shields.io/badge/DoH-local%20Caddy-00ADD8)
 
 Production-ready Unbound recursive DNS resolver configuration for **openSUSE Tumbleweed** — hardened, privacy-first, with DNS-over-TLS upstream (Quad9), local DoH endpoint, DNSSEC validation, ad blocking, and automated maintenance via systemd.
 
@@ -13,10 +13,10 @@ Production-ready Unbound recursive DNS resolver configuration for **openSUSE Tum
 
 ## Overview
 
-This configuration transforms Unbound into a full privacy DNS stack serving the local host and KVM virtual machines. Upstream resolution is exclusively performed over **TLS (DoT)** to Quad9, ensuring no plaintext DNS leaves the system.
+This configuration transforms Unbound into a full privacy DNS stack serving the local host and KVM virtual machines. Upstream resolution is exclusively performed over **TLS (DoT)** to Quad9 — no plaintext DNS leaves the system.
 
 Key design goals:
-- **Privacy** — QNAME minimization, hide-identity, hide-version, no query logging to upstream
+- **Privacy** — QNAME minimization, hidden identity/version, no upstream query logging
 - **Security** — DNSSEC validation, hardened against amplification and rebinding attacks
 - **Local DoH** — serves DNS-over-HTTPS internally via Caddy (`doh.lan`) for ECH-capable browsers
 - **Ad blocking** — ~3500 domains blocked at DNS level via pgl.yoyo.org (Unbound format)
@@ -25,37 +25,30 @@ Key design goals:
 
 ---
 
-## Architecture
+## System requirements
 
-```
-Browser (ECH)
-    │
-    ▼
-Caddy (doh.lan:8053) ──────────────────► Unbound (127.0.0.1:53)
-                                              │
-                          ┌───────────────────┤
-                          │                   │
-                    Local zones          Forward zone "."
-                    (doh.lan, bytel.fr)       │
-                                         DNS-over-TLS
-                                              │
-                                         ┌───┴───┐
-                                      Quad9   Quad9
-                                    9.9.9.9  149.112.112.112
-```
+| Component | Version |
+|-----------|---------|
+| Unbound | 1.x |
+| openSUSE | Tumbleweed (rolling) |
+| Threads | 4 (adjust to CPU core count) |
+| RAM | ~170 MB (`msg-cache 50m` + `rrset-cache 100m` + overhead) |
 
 ---
 
 ## Features
 
 ### Privacy & security
-- `qname-minimisation: yes` + `qname-minimisation-strict: yes` — minimizes query exposure to authoritative servers
-- `hide-identity: yes` / `hide-version: yes` — no fingerprinting of the resolver
-- `use-caps-for-id: yes` — 0x20 encoding to detect forged responses
-- `deny-any: yes` — blocks ANY queries used for DNS amplification attacks
-- `aggressive-nsec: yes` — DNSSEC negative caching to reduce upstream load
-- DNS rebinding protection — all RFC1918 ranges blocked as `private-address`
-- `ratelimit: 1000` / `ip-ratelimit: 200` — protection against flood from VMs
+
+| Setting | Effect |
+|---------|--------|
+| `qname-minimisation: yes` | Minimizes query exposure to authoritative servers |
+| `hide-identity` / `hide-version` | No resolver fingerprinting |
+| `use-caps-for-id: yes` | 0x20 encoding to detect forged responses |
+| `deny-any: yes` | Blocks ANY queries used for DNS amplification |
+| `aggressive-nsec: yes` | DNSSEC negative caching, reduces upstream load |
+| `private-address` (all RFC1918) | Full DNS rebinding protection |
+| `ratelimit: 1000` / `ip-ratelimit: 200` | Flood protection (host + VMs) |
 
 ### DNSSEC
 - Full validation via `module-config: "validator iterator"`
@@ -63,15 +56,21 @@ Caddy (doh.lan:8053) ──────────────────► U
 - `val-permissive-mode: no` — strict mode, bogus responses are rejected
 
 ### DNS-over-TLS upstream
-- Exclusive TLS forwarding to **Quad9** (9.9.9.9, 149.112.112.112) on port 853
-- IPv4 + IPv6 upstreams configured
-- Certificate bundle: `/etc/ssl/ca-bundle.pem` (openSUSE system trust store)
-- TLS cipher policy: `PROFILE=SYSTEM` (aligned to openSUSE system policy)
+
+| Server | Address | Port |
+|--------|---------|------|
+| Quad9 (IPv4) | `9.9.9.9` | 853 |
+| Quad9 (IPv4) | `149.112.112.112` | 853 |
+| Quad9 (IPv6) | `2620:fe::fe` | 853 |
+| Quad9 (IPv6) | `2620:fe::9` | 853 |
+
+TLS certificate verified against `/etc/ssl/ca-bundle.pem` (openSUSE system trust store).  
+Cipher policy: `PROFILE=SYSTEM` aligned to openSUSE hardening.
 
 ### Local DoH endpoint
-- Unbound listens on `127.0.0.1@8053` and `::1@8053` for HTTP (no TLS downstream)
-- Caddy terminates HTTPS and proxies to Unbound — resolves as `doh.lan`
-- Enables ECH in LibreWolf and Chromium using a local trusted resolver
+- Unbound listens on `127.0.0.1@8053` / `::1@8053` (HTTP, no TLS downstream)
+- Caddy terminates HTTPS and proxies to Unbound, resolves as `doh.lan`
+- Enables ECH in LibreWolf and Chromium using a locally trusted resolver
 
 ### Ad blocking
 - Domain list from [pgl.yoyo.org](https://pgl.yoyo.org/adservers/) in Unbound format
@@ -79,17 +78,22 @@ Caddy (doh.lan:8053) ──────────────────► U
 - Updated weekly via systemd — see [`systemd-units/`](systemd-units/)
 
 ### Performance
-- 4 threads with 8-slab caches (optimized for 4-core CPU)
-- `msg-cache-size: 50m` / `rrset-cache-size: 100m`
-- `prefetch: yes` + `serve-expired: yes` — low-latency cache serving
-- `edns-tcp-keepalive: yes` — persistent TLS connections to Quad9
+
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `msg-cache-size` | 50 MB | Query response cache |
+| `rrset-cache-size` | 100 MB | Resource record cache |
+| `num-threads` | 4 | Parallel query processing |
+| `prefetch: yes` | — | Pre-fetches expiring records |
+| `serve-expired: yes` | 3600s | Serves stale cache under TTL |
+| `edns-tcp-keepalive` | yes | Persistent TLS connections to Quad9 |
 
 ---
 
 ## Repository structure
 
 ```
-unbound/
+unbound-tumbleweed-config/
 ├── unbound.conf              # Main configuration (production)
 ├── local.d/
 │   ├── README.md             # Documents each fragment
@@ -123,9 +127,9 @@ Edit the following placeholders in `unbound.conf` to match your network:
 
 | Placeholder | Replace with |
 |-------------|-------------|
-| `YOUR_BRIDGE_INTERFACE` | Your KVM bridge interface (e.g. `br0`) |
-| `YOUR_LAN_SUBNET` | Your local network (e.g. `192.168.1.0/24`) |
-| `YOUR_GATEWAY_IP` | Your router IP (e.g. `192.168.1.254`) |
+| `YOUR_BRIDGE_INTERFACE` | KVM bridge interface (e.g. `br0`) |
+| `YOUR_LAN_SUBNET` | Local network (e.g. `192.168.1.0/24`) |
+| `YOUR_GATEWAY_IP` | Router IP (e.g. `192.168.1.254`) |
 
 ### 3. Deploy local.d fragments
 
@@ -134,58 +138,32 @@ sudo mkdir -p /etc/unbound/local.d
 sudo cp local.d/doh-local.conf /etc/unbound/local.d/
 ```
 
-### 4. Generate control keys
+### 4. Generate control keys and initialize DNSSEC
 
 ```bash
 sudo unbound-control-setup
-```
-
-### 5. Initialize DNSSEC trust anchor
-
-```bash
 sudo unbound-anchor -a /var/lib/unbound/root.key
 ```
 
-### 6. Deploy systemd units
+### 5. Deploy systemd units
 
 ```bash
 sudo cp systemd-units/*.service /etc/systemd/system/
 sudo cp systemd-units/*.timer /etc/systemd/system/
-
 sudo systemctl daemon-reload
 
-# Enable and start timers
 sudo systemctl enable --now update-unbound-ads.timer
 sudo systemctl enable --now update-unbound-roots.timer
 
-# Populate ad list and root hints immediately
+# Populate immediately on first install
 sudo systemctl start update-unbound-ads.service
 sudo systemctl start update-unbound-roots.service
 ```
 
-### 7. Start Unbound
+### 6. Start Unbound
 
 ```bash
 sudo systemctl enable --now unbound
-```
-
-### 8. Verify
-
-```bash
-# Check service status
-systemctl status unbound
-
-# Test local resolution
-dig example.com @127.0.0.1
-
-# Test DNSSEC validation
-dig sigok.verteiltesysteme.net @127.0.0.1 +dnssec
-
-# Test ad blocking
-dig doubleclick.net @127.0.0.1
-
-# Check statistics
-unbound-control stats_noreset | head -20
 ```
 
 ---
@@ -194,11 +172,11 @@ unbound-control stats_noreset | head -20
 
 | Unit | Trigger | Action |
 |------|---------|--------|
-| `update-unbound-ads.timer` | Weekly (+ random 0–60 min delay) | Downloads pgl.yoyo.org list, reloads Unbound |
-| `update-unbound-roots.timer` | Monthly (+ random 0–60 min delay) | Downloads root hints from internic.net, reloads Unbound |
+| `update-unbound-ads.timer` | Weekly + up to 1h random delay | Downloads pgl.yoyo.org list, reloads Unbound |
+| `update-unbound-roots.timer` | Monthly + up to 1h random delay | Downloads root hints from internic.net, reloads Unbound |
 | `unbound-anchor.timer` | Daily (built-in) | Updates DNSSEC root trust anchor |
 
-All timers use `Persistent=true` — missed runs are executed at next boot.
+All timers use `Persistent=true` — missed runs execute at next boot.
 
 ---
 
@@ -208,14 +186,15 @@ All timers use `Persistent=true` — missed runs are executed at next boot.
 # Reload configuration without restart
 sudo unbound-control reload
 
-# Check current statistics
-sudo unbound-control stats_noreset
+# Test resolution and DNSSEC
+dig example.com @127.0.0.1
+dig sigok.verteiltesysteme.net @127.0.0.1 +dnssec
 
-# Flush specific domain from cache
-sudo unbound-control flush example.com
+# Test ad blocking (should return NXDOMAIN)
+dig doubleclick.net @127.0.0.1
 
-# Check local ad blocking list size
-wc -l /etc/unbound/local.d/unbound_add_servers.conf
+# Check statistics
+sudo unbound-control stats_noreset | head -20
 
 # Monitor DNS queries live
 sudo tail -f /var/log/unbound.log
@@ -225,10 +204,11 @@ sudo tail -f /var/log/unbound.log
 
 ## Integration
 
-This resolver is designed to work alongside:
-- **[squid-tumbleweed-config](https://github.com/crisis1er/squid-tumbleweed-config)** — Squid proxy uses Unbound as its DNS resolver (`dns_nameservers 127.0.0.1 ::1`)
-- **Caddy** — terminates HTTPS for the `doh.lan` DoH endpoint, proxies to Unbound port 8053
-- **Prometheus + unbound_exporter** — exposes resolver statistics for monitoring
+| Component | Role |
+|-----------|------|
+| [squid-tumbleweed-config](https://github.com/crisis1er/squid-tumbleweed-config) | Squid proxy uses Unbound as DNS resolver (`dns_nameservers 127.0.0.1 ::1`) |
+| Caddy | Terminates HTTPS for `doh.lan`, proxies to Unbound port 8053 |
+| Prometheus + unbound_exporter | Exposes resolver statistics for monitoring |
 
 ---
 
