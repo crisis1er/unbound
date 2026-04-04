@@ -1,0 +1,15 @@
+[Unit]
+Description=Update Unbound root hints
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+Restart=on-failure
+RestartSec=30s
+ExecStart=/usr/bin/curl -fsSo /etc/unbound/root.hints \
+  "https://www.internic.net/domain/named.cache"
+ExecStartPost=/usr/sbin/unbound-control reload
+
+[Install]
+WantedBy=multi-user.target

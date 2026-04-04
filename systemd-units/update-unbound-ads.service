@@ -1,0 +1,15 @@
+[Unit]
+Description=Update Unbound ad blocking lists
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+Restart=on-failure
+RestartSec=30s
+ExecStart=/usr/bin/curl -fsSo /etc/unbound/local.d/unbound_add_servers.conf \
+  "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=unbound&showintro=0&mimetype=plaintext"
+ExecStartPost=/usr/sbin/unbound-control reload
+
+[Install]
+WantedBy=multi-user.target
