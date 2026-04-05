@@ -31,31 +31,56 @@ The diagram below shows how a DNS query travels through the full stack, what dec
 
 ```mermaid
 flowchart TD
-    A[Browser with DoH] -->|HTTPS doh.lan| B[Caddy - TLS termination]
-    C[Application - plain DNS] -->|UDP/TCP port 53| D[Unbound resolver]
+    classDef client fill:#2d3748,stroke:#a0aec0,stroke-width:2px,color:#fff
+    classDef service fill:#5a67d8,stroke:#c3dafe,stroke-width:2px,color:#fff
+    classDef decision fill:#c53030,stroke:#fed7d7,stroke-width:2px,color:#fff
+    classDef external fill:#2f855a,stroke:#c6f6d5,stroke-width:2px,color:#fff
+    classDef monitoring fill:#319795,stroke:#b2f5ea,stroke-width:2px,color:#fff
+
+    A[Browser with DoH]:::client
+    B[Caddy - TLS termination]:::service
+    C[Application - plain DNS]:::client
+    D[Unbound resolver]:::service
+    E{Ad-block check}:::decision
+    F[NXDOMAIN returned]:::decision
+    G{Cache check}:::decision
+    H[Cached response returned]:::decision
+    I[QNAME minimisation]:::service
+    J[Quad9 IPv4]:::external
+    K[Quad9 IPv6]:::external
+    L{DNSSEC check}:::decision
+    M[Stored in cache]:::service
+    N[Query rejected]:::decision
+    O[Validated response returned]:::decision
+    P[unbound_exporter]:::monitoring
+    Q[Prometheus]:::monitoring
+    R[Grafana]:::monitoring
+
+    A -->|HTTPS doh.lan| B
+    C -->|UDP/TCP port 53| D
     B -->|HTTP port 8053| D
 
-    D --> E{Ad-block check}
-    E -->|Blocked| F[NXDOMAIN returned]
-    E -->|Allowed| G{Cache check}
+    D --> E
+    E -->|Blocked| F
+    E -->|Allowed| G
 
-    G -->|Hit| H[Cached response returned]
-    G -->|Miss| I[QNAME minimisation]
+    G -->|Hit| H
+    G -->|Miss| I
 
-    I -->|DoT port 853| J[Quad9 IPv4]
-    I -->|DoT port 853| K[Quad9 IPv6]
+    I -->|DoT port 853| J
+    I -->|DoT port 853| K
 
-    J --> L{DNSSEC check}
+    J --> L
     K --> L
 
-    L -->|Valid| M[Stored in cache]
-    L -->|Bogus| N[Query rejected]
+    L -->|Valid| M
+    L -->|Bogus| N
 
-    M --> O[Validated response returned]
+    M --> O
 
-    D -->|stats| P[unbound_exporter]
-    P --> Q[Prometheus]
-    Q --> R[Grafana]
+    D -->|stats| P
+    P --> Q
+    Q --> R
 ```
 
 > **Reading the diagram:** A DNS query enters from the top (classic `:53` or DoH via Caddy).  
