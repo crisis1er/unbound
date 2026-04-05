@@ -31,100 +31,70 @@ The diagram below shows how a DNS query travels through the full stack, what dec
 
 ```mermaid
 flowchart TD
-    subgraph CLIENT["🖥️ Client (localhost / KVM VM)"]
-        APP["Application
-(Browser, curl, dig...)"]
-        LIBREOLF["LibreWolf / Chromium
-(ECH enabled)"]
+    subgraph CLIENT["Client - localhost / KVM VM"]
+        APP["Application: Browser, curl, dig"]
+        LIBREOLF["LibreWolf / Chromium - ECH enabled"]
     end
 
-    subgraph LOCAL_STACK["🔒 Privacy DNS Stack — localhost"]
-        CADDY["Caddy
-doh.lan — HTTPS :443
-→ proxy to :8053"]
+    subgraph LOCAL["Privacy DNS Stack - localhost"]
+        CADDY["Caddy - doh.lan HTTPS 443
+proxy to port 8053"]
         UNBOUND["Unbound
-:53 (UDP/TCP)
-:8053 (DoH plain, loopback only)"]
-        ADBLOCK["🚫 Ad blocking
-~3500 domains blocked
-→ NXDOMAIN immediately"]
-        DNSSEC["🔐 DNSSEC Validation
-val-permissive-mode: no
-→ bogus = rejected"]
-        CACHE["💾 Local cache
-msg-cache 50 MB
-rrset-cache 100 MB
+port 53 UDP/TCP
+port 8053 DoH loopback"]
+        ADBLOCK["Ad blocking
+3500 domains - NXDOMAIN"]
+        DNSSEC["DNSSEC Validation
+strict mode - bogus rejected"]
+        CACHE["Local cache
+50 MB msg / 100 MB rrset
 prefetch + serve-expired"]
-        QMIN["🕵️ QNAME Minimisation
-Minimises exposure to authoritative servers"]
+        QMIN["QNAME Minimisation"]
     end
 
-    subgraph UPSTREAM["🌐 Upstream — External resolution"]
-        QUAD9_1["Quad9
-9.9.9.9:853 DoT
-149.112.112.112:853 DoT"]
-        QUAD9_6["Quad9 IPv6
-2620:fe::fe:853 DoT
-2620:fe::9:853 DoT"]
+    subgraph UPSTREAM["Upstream - Encrypted resolution"]
+        QUAD9["Quad9 - DoT port 853
+9.9.9.9 / 149.112.112.112"]
+        QUAD9V6["Quad9 IPv6 - DoT port 853"]
     end
 
-    subgraph MONITORING["📊 Monitoring"]
-        EXPORTER["unbound_exporter
-→ Prometheus :9167"]
+    subgraph MONITORING["Monitoring"]
+        EXPORTER["unbound_exporter - port 9167"]
         PROMETHEUS["Prometheus"]
         GRAFANA["Grafana"]
     end
 
-    subgraph MAINTENANCE["⚙️ Automated maintenance (systemd)"]
-        ADS_TIMER["update-unbound-ads.timer
-Weekly — pgl.yoyo.org"]
-        ROOTS_TIMER["update-unbound-roots.timer
-Monthly — internic.net"]
-        ANCHOR_TIMER["unbound-anchor.timer
-Daily — DNSSEC root key"]
+    subgraph MAINTENANCE["Automated maintenance - systemd"]
+        ADS["update-unbound-ads.timer - Weekly"]
+        ROOTS["update-unbound-roots.timer - Monthly"]
+        ANCHOR["unbound-anchor.timer - Daily"]
     end
 
-    LIBREOLF -->|"HTTPS — doh.lan:443"| CADDY
-    CADDY -->|"HTTP plain — 127.0.0.1:8053"| UNBOUND
-    APP -->|"DNS UDP/TCP — 127.0.0.1:53"| UNBOUND
+    LIBREOLF -->|"HTTPS doh.lan:443"| CADDY
+    CADDY -->|"HTTP 127.0.0.1:8053"| UNBOUND
+    APP -->|"DNS UDP/TCP :53"| UNBOUND
 
     UNBOUND --> ADBLOCK
     UNBOUND --> DNSSEC
     UNBOUND --> CACHE
     UNBOUND --> QMIN
 
-    QMIN -->|"DoT TLS:853
-TLS verified — /etc/ssl/ca-bundle.pem"| QUAD9_1
-    QMIN -->|"DoT TLS:853"| QUAD9_6
+    QMIN -->|"DoT TLS:853"| QUAD9
+    QMIN -->|"DoT TLS:853"| QUAD9V6
 
-    QUAD9_1 -->|"Encrypted response"| DNSSEC
-    QUAD9_6 -->|"Encrypted response"| DNSSEC
-    DNSSEC -->|"✅ Valid → cache
-❌ Bogus → rejected"| CACHE
-    CACHE -->|"Final response"| APP
-    CACHE -->|"Final response"| CADDY
+    QUAD9 -->|"Encrypted response"| DNSSEC
+    QUAD9V6 -->|"Encrypted response"| DNSSEC
+    DNSSEC -->|"Valid to cache / Bogus rejected"| CACHE
+    CACHE -->|"Response"| APP
+    CACHE -->|"Response"| CADDY
 
     UNBOUND -->|"stats"| EXPORTER
     EXPORTER --> PROMETHEUS
     PROMETHEUS --> GRAFANA
 
-    ADS_TIMER -->|"reload"| UNBOUND
-    ROOTS_TIMER -->|"reload"| UNBOUND
-    ANCHOR_TIMER -->|"update"| UNBOUND
-
-    classDef client fill:#1e3a5f,stroke:#4a9eff,color:#fff
-    classDef stack fill:#1a2e1a,stroke:#73BA25,color:#fff
-    classDef upstream fill:#2d1a1a,stroke:#ff6b35,color:#fff
-    classDef monitoring fill:#1a1a2e,stroke:#9b59b6,color:#fff
-    classDef maintenance fill:#2d2d1a,stroke:#f1c40f,color:#fff
-    classDef decision fill:#0d1117,stroke:#73BA25,color:#73BA25
-
-    class APP,LIBREOLF client
-    class CADDY,UNBOUND stack
-    class ADBLOCK,DNSSEC,CACHE,QMIN decision
-    class QUAD9_1,QUAD9_6 upstream
-    class EXPORTER,PROMETHEUS,GRAFANA monitoring
-    class ADS_TIMER,ROOTS_TIMER,ANCHOR_TIMER maintenance
+    ADS -->|"reload"| UNBOUND
+    ROOTS -->|"reload"| UNBOUND
+    ANCHOR -->|"update"| UNBOUND
 ```
 
 > **Reading the diagram:** A DNS query enters from the top (classic `:53` or DoH via Caddy).  
