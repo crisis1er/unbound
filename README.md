@@ -31,18 +31,18 @@ The diagram below shows how a DNS query travels through the full stack, what dec
 
 ```mermaid
 flowchart TD
-    classDef client fill:#2d3748,stroke:#a0aec0,stroke-width:2px,color:#fff
-    classDef kvm fill:#2d3748,stroke:#68d391,stroke-width:2px,color:#fff
-    classDef proxy fill:#5a67d8,stroke:#c3dafe,stroke-width:2px,color:#fff
-    classDef resolver fill:#276749,stroke:#9ae6b4,stroke-width:2px,color:#fff
-    classDef decision fill:#c53030,stroke:#fed7d7,stroke-width:2px,color:#fff
-    classDef blocked fill:#742a2a,stroke:#fc8181,stroke-width:2px,color:#fff
-    classDef cache fill:#2c5282,stroke:#90cdf4,stroke-width:2px,color:#fff
-    classDef local fill:#553c9a,stroke:#d6bcfa,stroke-width:2px,color:#fff
-    classDef upstream fill:#2f855a,stroke:#c6f6d5,stroke-width:2px,color:#fff
-    classDef monitoring fill:#319795,stroke:#b2f5ea,stroke-width:2px,color:#fff
-    classDef logs fill:#744210,stroke:#fbd38d,stroke-width:2px,color:#fff
-    classDef maintenance fill:#2d2a1a,stroke:#f39c12,stroke-width:2px,color:#fff
+    classDef client fill:#1a202c,stroke:#a0aec0,stroke-width:2px,color:#fff
+    classDef kvm fill:#1a202c,stroke:#68d391,stroke-width:2px,color:#fff
+    classDef proxy fill:#3c4ab0,stroke:#c3dafe,stroke-width:2px,color:#fff
+    classDef resolver fill:#1a4731,stroke:#9ae6b4,stroke-width:2px,color:#fff
+    classDef decision fill:#7b1d1d,stroke:#fc8181,stroke-width:2px,color:#fff
+    classDef blocked fill:#4a1010,stroke:#fc8181,stroke-width:2px,color:#fff
+    classDef cache fill:#1a3a6b,stroke:#90cdf4,stroke-width:2px,color:#fff
+    classDef local fill:#3b2070,stroke:#d6bcfa,stroke-width:2px,color:#fff
+    classDef upstream fill:#1a5c38,stroke:#c6f6d5,stroke-width:2px,color:#fff
+    classDef monitoring fill:#1a5c5a,stroke:#b2f5ea,stroke-width:2px,color:#fff
+    classDef logs fill:#4a2800,stroke:#fbd38d,stroke-width:2px,color:#fff
+    classDef maintenance fill:#1a1800,stroke:#f39c12,stroke-width:2px,color:#fff
 
     BROWSER["Browser - ECH enabled"]:::client
     CADDY["Caddy - doh.lan HTTPS port 443"]:::proxy
