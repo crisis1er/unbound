@@ -28,7 +28,7 @@ Key design goals:
 ## Architecture — DNS Privacy Stack
 
 The diagram below shows how a DNS query travels through the full stack, what decisions are made at each step, and which protocols are used.
-
+> ⚠️ *If the diagram is not visible, refresh the page — Mermaid rendering may 
 ```mermaid
 flowchart TD
     classDef client fill:#374151,stroke:#9ca3af,stroke-width:2px,color:#ffffff
