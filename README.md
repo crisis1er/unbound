@@ -32,26 +32,30 @@ The diagram below shows how a DNS query travels through the full stack, what dec
 ```mermaid
 flowchart TD
     A[Browser with DoH] -->|HTTPS doh.lan| B[Caddy - TLS termination]
-    C[Application - plain DNS] -->|UDP/TCP port 53| D
+    C[Application - plain DNS] -->|UDP/TCP port 53| D[Unbound resolver]
+    B -->|HTTP port 8053| D
 
-    B -->|HTTP port 8053| D[Unbound resolver]
+    D --> E{Ad-block check}
+    E -->|Blocked| F[NXDOMAIN returned]
+    E -->|Allowed| G{Cache check}
 
-    D --> E{Ad-block list?}
-    E -->|Domain blocked| F[NXDOMAIN returned]
-    E -->|Domain allowed| G{Cache hit?}
+    G -->|Hit| H[Cached response returned]
+    G -->|Miss| I[QNAME minimisation]
 
-    G -->|Yes| H[Return cached response]
-    G -->|No| I[Send query upstream]
+    I -->|DoT port 853| J[Quad9 IPv4]
+    I -->|DoT port 853| K[Quad9 IPv6]
 
-    I -->|DNS over TLS port 853| J[Quad9 - 9.9.9.9]
+    J --> L{DNSSEC check}
+    K --> L
 
-    J --> K[Encrypted response received]
-    K --> L{DNSSEC valid?}
-
-    L -->|Valid| M[Store in cache]
+    L -->|Valid| M[Stored in cache]
     L -->|Bogus| N[Query rejected]
 
-    M --> O[Return validated response]
+    M --> O[Validated response returned]
+
+    D -->|stats| P[unbound_exporter]
+    P --> Q[Prometheus]
+    Q --> R[Grafana]
 ```
 
 > **Reading the diagram:** A DNS query enters from the top (classic `:53` or DoH via Caddy).  
