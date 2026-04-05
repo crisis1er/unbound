@@ -43,11 +43,14 @@ flowchart TD
     classDef monitoring fill:#0f766e,stroke:#5eead4,stroke-width:2px,color:#ffffff
     classDef logs fill:#c2410c,stroke:#fdba74,stroke-width:2px,color:#ffffff
     classDef maintenance fill:#a16207,stroke:#fde68a,stroke-width:2px,color:#ffffff
+    classDef firewall fill:#831843,stroke:#f9a8d4,stroke-width:2px,color:#ffffff
 
     BROWSER["Browser - ECH enabled"]:::client
     CADDY["Caddy - doh.lan HTTPS port 443"]:::proxy
     APP["Application - port 53"]:::client
     KVM["KVM VM - bridge interface"]:::kvm
+
+    FW["firewalld - inbound port 53 TCP/UDP - port 8053 loopback - outbound port 853 DoT"]:::firewall
 
     UNBOUND["Unbound resolver - port 53 / DoH port 8053"]:::resolver
 
@@ -86,9 +89,10 @@ flowchart TD
     ANCHOR["unbound-anchor - Daily - DNSSEC root key"]:::maintenance
 
     BROWSER -->|"HTTPS doh.lan port 443"| CADDY
-    CADDY -->|"HTTP port 8053 loopback"| UNBOUND
-    APP -->|"DNS port 53"| UNBOUND
-    KVM -->|"DNS port 53 via bridge"| UNBOUND
+    CADDY -->|"port 8053 loopback"| FW
+    APP -->|"port 53 TCP/UDP"| FW
+    KVM -->|"port 53 via bridge"| FW
+    FW --> UNBOUND
 
     UNBOUND --> RATELIMIT
     RATELIMIT -->|"Limit exceeded"| REJECTED_RL
