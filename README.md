@@ -31,18 +31,18 @@ The diagram below shows how a DNS query travels through the full stack, what dec
 
 ```mermaid
 flowchart TD
-    classDef client fill:#e2e8f0,stroke:#4a5568,stroke-width:2px,color:#1a202c
-    classDef kvm fill:#c6f6d5,stroke:#276749,stroke-width:2px,color:#1a202c
-    classDef proxy fill:#c3dafe,stroke:#3c4ab0,stroke-width:2px,color:#1a202c
-    classDef resolver fill:#9ae6b4,stroke:#276749,stroke-width:2px,color:#1a202c
-    classDef decision fill:#fed7d7,stroke:#c53030,stroke-width:2px,color:#1a202c
-    classDef blocked fill:#fc8181,stroke:#9b2c2c,stroke-width:2px,color:#1a202c
-    classDef cache fill:#bee3f8,stroke:#2b6cb0,stroke-width:2px,color:#1a202c
-    classDef local fill:#e9d8fd,stroke:#553c9a,stroke-width:2px,color:#1a202c
-    classDef upstream fill:#b2f5ea,stroke:#2c7a7b,stroke-width:2px,color:#1a202c
-    classDef monitoring fill:#b2f5ea,stroke:#319795,stroke-width:2px,color:#1a202c
-    classDef logs fill:#fbd38d,stroke:#744210,stroke-width:2px,color:#1a202c
-    classDef maintenance fill:#fefcbf,stroke:#b7791f,stroke-width:2px,color:#1a202c
+    classDef client fill:#2d3748,stroke:#ffffff,stroke-width:2px,color:#ffffff
+    classDef kvm fill:#1c4532,stroke:#ffffff,stroke-width:2px,color:#ffffff
+    classDef proxy fill:#23317a,stroke:#ffffff,stroke-width:2px,color:#ffffff
+    classDef resolver fill:#14532d,stroke:#ffffff,stroke-width:2px,color:#ffffff
+    classDef decision fill:#7f1d1d,stroke:#ffffff,stroke-width:2px,color:#ffffff
+    classDef blocked fill:#450a0a,stroke:#ffffff,stroke-width:2px,color:#ffffff
+    classDef cache fill:#1e3a5f,stroke:#ffffff,stroke-width:2px,color:#ffffff
+    classDef local fill:#3b0764,stroke:#ffffff,stroke-width:2px,color:#ffffff
+    classDef upstream fill:#064e3b,stroke:#ffffff,stroke-width:2px,color:#ffffff
+    classDef monitoring fill:#134e4a,stroke:#ffffff,stroke-width:2px,color:#ffffff
+    classDef logs fill:#431407,stroke:#ffffff,stroke-width:2px,color:#ffffff
+    classDef maintenance fill:#1c1917,stroke:#f59e0b,stroke-width:2px,color:#ffffff
 
     BROWSER["Browser - ECH enabled"]:::client
     CADDY["Caddy - doh.lan HTTPS port 443"]:::proxy
