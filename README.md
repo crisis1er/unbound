@@ -25,77 +25,6 @@ Key design goals:
 
 ---
 
-## Architecture — DNS Privacy Stack
-
-The diagram below shows how a DNS query travels through the stack, which decisions are made at each step, and which protocols are used.
-
-```mermaid
-flowchart TD
-    APP[Application / Browser / dig]
-    BROWSER[LibreWolf or Chromium - ECH]
-    CADDY[Caddy - doh.lan HTTPS :443]
-    UNBOUND[Unbound - :53 UDP/TCP and :8053 DoH loopback]
-    ADBLOCK[Ad blocking - 3500 domains - NXDOMAIN]
-    DNSSEC[DNSSEC Validation - strict - bogus rejected]
-    CACHE[Local cache - 150 MB - prefetch]
-    QMIN[QNAME Minimisation]
-    QUAD9[Quad9 IPv4 - DoT TLS :853]
-    QUAD9V6[Quad9 IPv6 - DoT TLS :853]
-    EXPORTER[unbound_exporter]
-    PROMETHEUS[Prometheus]
-    GRAFANA[Grafana]
-    ADS[update-unbound-ads.timer - Weekly]
-    ROOTS[update-unbound-roots.timer - Monthly]
-    ANCHOR[unbound-anchor.timer - Daily]
-
-    APP -->|DNS :53| UNBOUND
-    BROWSER -->|HTTPS doh.lan:443| CADDY
-    CADDY -->|HTTP :8053 loopback| UNBOUND
-
-    UNBOUND --> ADBLOCK
-    UNBOUND --> DNSSEC
-    UNBOUND --> CACHE
-    UNBOUND --> QMIN
-
-    QMIN -->|DoT TLS :853| QUAD9
-    QMIN -->|DoT TLS :853| QUAD9V6
-
-    QUAD9 -->|Encrypted response| DNSSEC
-    QUAD9V6 -->|Encrypted response| DNSSEC
-    DNSSEC -->|Valid: cached / Bogus: dropped| CACHE
-    CACHE -->|Response| APP
-    CACHE -->|Response| CADDY
-
-    UNBOUND --> EXPORTER
-    EXPORTER --> PROMETHEUS
-    PROMETHEUS --> GRAFANA
-
-    ADS -->|reload| UNBOUND
-    ROOTS -->|reload| UNBOUND
-    ANCHOR -->|update| UNBOUND
-
-    classDef client fill:#1e3a5f,stroke:#4a9eff,color:#fff
-    classDef core fill:#1a2e1a,stroke:#73BA25,color:#fff
-    classDef decision fill:#0d1117,stroke:#73BA25,color:#73BA25
-    classDef upstream fill:#2d1a1a,stroke:#ff6b35,color:#fff
-    classDef monitor fill:#1a1a2e,stroke:#9b59b6,color:#fff
-    classDef timer fill:#2d2d1a,stroke:#f1c40f,color:#fff
-
-    class APP,BROWSER client
-    class CADDY,UNBOUND core
-    class ADBLOCK,DNSSEC,CACHE,QMIN decision
-    class QUAD9,QUAD9V6 upstream
-    class EXPORTER,PROMETHEUS,GRAFANA monitor
-    class ADS,ROOTS,ANCHOR timer
-```
-
-> **Reading the diagram:** A query enters via DNS port 53 or via DoH through Caddy.
-> Unbound checks the ad-block list first, then validates DNSSEC, checks the local cache,
-> and only resolves upstream over encrypted DoT TLS:853 if the answer is not cached.
-> No plaintext DNS ever leaves the system.
-
----
-
 ## System requirements
 
 | Component | Version |
@@ -172,6 +101,8 @@ unbound-tumbleweed-config/
 ├── systemd-units/
 │   ├── update-unbound-ads.service    # Weekly ad list update
 │   ├── update-unbound-ads.timer
+│   ├── update-unbound-roots.service  # Monthly root hints update
+│   └── update-unbound-roots.timer
 ├── CHANGELOG.md
 └── LICENSE
 ```
