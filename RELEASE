@@ -1,6 +1,46 @@
-# RELEASE
+# RELEASE — unbound-tumbleweed-config
 
-Version: v2.0
-Date:    2026-04-05
+Version:  v2.0
+Date:     2026-04-04
+Platform: openSUSE Tumbleweed
+Unbound:  1.x
 
-See CHANGELOG.md for details.
+---
+
+## What's in this release
+
+### Complete production rewrite
+- Full `unbound.conf` with detailed inline comments — every parameter documented
+- DoH endpoint `doh.lan` via `local.d/doh-local.conf` — port 8053 (proxied by Caddy)
+- Split DNS: local domains (bytel.fr, home.) forwarded to gateway without DNSSEC
+- All other queries via QNAME minimization → Quad9 DoT (port 853, IPv4 + IPv6)
+
+### Security & privacy
+- DNSSEC full validation (`val-permissive-mode: no`) — bogus responses rejected
+- `hide-identity`, `hide-version`, `use-caps-for-id` — anti-fingerprinting
+- `deny-any: yes` — blocks DNS amplification
+- `private-address` all RFC1918 ranges — full rebinding protection
+- Rate limiting: 1000 req/s global, 200 req/s per IP
+
+### Performance
+- Message cache: 50 MB — RRset cache: 100 MB — Key cache: 16 MB
+- 4 threads, `prefetch: yes`, `serve-expired: yes` (3600s stale)
+- `edns-tcp-keepalive` — persistent TLS connections to Quad9
+
+### Automated maintenance (systemd units)
+- `update-unbound-ads` — weekly ad list update from pgl.yoyo.org
+- `update-unbound-roots` — monthly root hints update from internic.net
+- `unbound-anchor` — daily DNSSEC root trust anchor update
+
+---
+
+## Current configuration summary
+
+| Parameter      | Value                          |
+|----------------|--------------------------------|
+| Listen port    | 53 (DNS) / 8053 (DoH)         |
+| Upstream       | Quad9 9.9.9.9:853 DoT         |
+| DNSSEC         | Full validation, strict mode   |
+| Ad blocking    | pgl.yoyo.org (~3500 domains)   |
+| Threads        | 4                              |
+| Cache total    | ~170 MB                        |
