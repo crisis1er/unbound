@@ -32,55 +32,101 @@ The diagram below shows how a DNS query travels through the full stack, what dec
 ```mermaid
 flowchart TD
     classDef client fill:#2d3748,stroke:#a0aec0,stroke-width:2px,color:#fff
-    classDef service fill:#5a67d8,stroke:#c3dafe,stroke-width:2px,color:#fff
+    classDef kvm fill:#2d3748,stroke:#68d391,stroke-width:2px,color:#fff
+    classDef proxy fill:#5a67d8,stroke:#c3dafe,stroke-width:2px,color:#fff
+    classDef resolver fill:#276749,stroke:#9ae6b4,stroke-width:2px,color:#fff
     classDef decision fill:#c53030,stroke:#fed7d7,stroke-width:2px,color:#fff
-    classDef external fill:#2f855a,stroke:#c6f6d5,stroke-width:2px,color:#fff
+    classDef blocked fill:#742a2a,stroke:#fc8181,stroke-width:2px,color:#fff
+    classDef cache fill:#2c5282,stroke:#90cdf4,stroke-width:2px,color:#fff
+    classDef local fill:#553c9a,stroke:#d6bcfa,stroke-width:2px,color:#fff
+    classDef upstream fill:#2f855a,stroke:#c6f6d5,stroke-width:2px,color:#fff
     classDef monitoring fill:#319795,stroke:#b2f5ea,stroke-width:2px,color:#fff
+    classDef logs fill:#744210,stroke:#fbd38d,stroke-width:2px,color:#fff
+    classDef maintenance fill:#2d2a1a,stroke:#f39c12,stroke-width:2px,color:#fff
 
-    A[Browser with DoH]:::client
-    B[Caddy - TLS termination]:::service
-    C[Application - plain DNS]:::client
-    D[Unbound resolver]:::service
-    E{Ad-block check}:::decision
-    F[NXDOMAIN returned]:::decision
-    G{Cache check}:::decision
-    H[Cached response returned]:::decision
-    I[QNAME minimisation]:::service
-    J[Quad9 IPv4]:::external
-    K[Quad9 IPv6]:::external
-    L{DNSSEC check}:::decision
-    M[Stored in cache]:::service
-    N[Query rejected]:::decision
-    O[Validated response returned]:::decision
-    P[unbound_exporter]:::monitoring
-    Q[Prometheus]:::monitoring
-    R[Grafana]:::monitoring
+    BROWSER["Browser - ECH enabled"]:::client
+    CADDY["Caddy - doh.lan HTTPS port 443"]:::proxy
+    APP["Application - port 53"]:::client
+    KVM["KVM VM - bridge interface"]:::kvm
 
-    A -->|HTTPS doh.lan| B
-    C -->|UDP/TCP port 53| D
-    B -->|HTTP port 8053| D
+    UNBOUND["Unbound resolver - port 53 / DoH port 8053"]:::resolver
 
-    D --> E
-    E -->|Blocked| F
-    E -->|Allowed| G
+    RATELIMIT{"Rate limit check - 1000 req/s global - 200 per IP"}:::decision
+    REJECTED_RL["Request refused"]:::blocked
 
-    G -->|Hit| H
-    G -->|Miss| I
+    ADBLOCK{"Ad-block list - unbound_add_servers.conf"}:::decision
+    NXDOMAIN["NXDOMAIN returned"]:::blocked
 
-    I -->|DoT port 853| J
-    I -->|DoT port 853| K
+    CACHE{"Local cache - msg 50MB - rrset 100MB - key 16MB"}:::cache
+    EXPIRED["serve-expired - stale response up to 3600s"]:::cache
 
-    J --> L
-    K --> L
+    DNSSPLIT{"Split DNS - local domain"}:::decision
 
-    L -->|Valid| M
-    L -->|Bogus| N
+    QMIN["QNAME minimisation strict"]:::resolver
 
-    M --> O
+    DNSSEC{"DNSSEC validation - val-permissive-mode: no"}:::decision
+    BOGUS["Query rejected - bogus response"]:::blocked
 
-    D -->|stats| P
-    P --> Q
-    Q --> R
+    GATEWAY["Gateway - bytel.fr / home. - no DNSSEC"]:::local
+    QUAD9["Quad9 IPv4 - 9.9.9.9 port 853 DoT"]:::upstream
+    QUAD9V6["Quad9 IPv6 - 2620:fe::fe port 853 DoT"]:::upstream
+
+    RESPONSE["Validated response returned to client"]:::client
+
+    EXPORTER["unbound_exporter - port 9167"]:::monitoring
+    PROMETHEUS["Prometheus"]:::monitoring
+    GRAFANA["Grafana"]:::monitoring
+
+    LOGFILE["unbound.log - queries / replies / servfail"]:::logs
+    ALLOY["Alloy"]:::logs
+    LOKI["Loki"]:::logs
+
+    ADS["update-unbound-ads - Weekly"]:::maintenance
+    ROOTS["update-unbound-roots - Monthly"]:::maintenance
+    ANCHOR["unbound-anchor - Daily - DNSSEC root key"]:::maintenance
+
+    BROWSER -->|"HTTPS doh.lan port 443"| CADDY
+    CADDY -->|"HTTP port 8053 loopback"| UNBOUND
+    APP -->|"DNS port 53"| UNBOUND
+    KVM -->|"DNS port 53 via bridge"| UNBOUND
+
+    UNBOUND --> RATELIMIT
+    RATELIMIT -->|"Limit exceeded"| REJECTED_RL
+    RATELIMIT -->|"Allowed"| ADBLOCK
+
+    ADBLOCK -->|"Blocked domain"| NXDOMAIN
+    ADBLOCK -->|"Allowed domain"| CACHE
+
+    CACHE -->|"HIT"| RESPONSE
+    CACHE -->|"MISS"| DNSSPLIT
+    CACHE -->|"Upstream unreachable"| EXPIRED
+    EXPIRED --> RESPONSE
+
+    DNSSPLIT -->|"bytel.fr or home."| GATEWAY
+    DNSSPLIT -->|"All other domains"| QMIN
+
+    GATEWAY --> RESPONSE
+
+    QMIN -->|"DoT TLS port 853"| QUAD9
+    QMIN -->|"DoT TLS port 853"| QUAD9V6
+
+    QUAD9 --> DNSSEC
+    QUAD9V6 --> DNSSEC
+
+    DNSSEC -->|"Valid"| RESPONSE
+    DNSSEC -->|"Bogus"| BOGUS
+
+    UNBOUND -->|"stats"| EXPORTER
+    EXPORTER --> PROMETHEUS
+    PROMETHEUS --> GRAFANA
+
+    UNBOUND -->|"write"| LOGFILE
+    LOGFILE --> ALLOY
+    ALLOY --> LOKI
+
+    ADS -->|"reload"| UNBOUND
+    ROOTS -->|"reload"| UNBOUND
+    ANCHOR -->|"update"| UNBOUND
 ```
 
 > **Reading the diagram:** A DNS query enters from the top (classic `:53` or DoH via Caddy).  
