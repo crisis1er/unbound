@@ -25,6 +25,104 @@ Key design goals:
 
 ---
 
+## Architecture — DNS Privacy Stack
+
+The diagram below shows how a DNS query travels through the full stack, what decisions are made at each step, and which protocols are used.
+
+```mermaid
+flowchart TD
+    subgraph CLIENT["🖥️ Client (localhost / KVM VM)"]
+        APP["Application\n(Browser, curl, dig...)"]
+        LIBREOLF["LibreWolf / Chromium\n(ECH enabled)"]
+    end
+
+    subgraph LOCAL_STACK["🔒 Privacy DNS Stack — localhost"]
+        direction TB
+        CADDY["Caddy\ndoh.lan — HTTPS :443\n→ proxy to :8053"]
+        UNBOUND["Unbound\n:53 (UDP/TCP)\n:8053 (DoH plain, loopback only)"]
+
+        subgraph UNBOUND_LOGIC["Unbound — Internal decisions"]
+            ADBLOCK["🚫 Ad blocking\n~3500 domains blocked\n→ NXDOMAIN immediately"]
+            DNSSEC["🔐 DNSSEC Validation\nval-permissive-mode: no\n→ bogus = rejected"]
+            CACHE["💾 Local cache\nmsg-cache 50 MB\nrrset-cache 100 MB\nprefetch + serve-expired"]
+            QMIN["🕵️ QNAME Minimisation\nMinimises exposure to authoritative servers"]
+        end
+    end
+
+    subgraph UPSTREAM["🌐 Upstream — External resolution"]
+        QUAD9_1["Quad9\n9.9.9.9:853 DoT\n149.112.112.112:853 DoT"]
+        QUAD9_6["Quad9 IPv6\n2620:fe::fe:853 DoT\n2620:fe::9:853 DoT"]
+    end
+
+    subgraph MONITORING["📊 Monitoring"]
+        EXPORTER["unbound_exporter\n→ Prometheus :9167"]
+        PROMETHEUS["Prometheus"]
+        GRAFANA["Grafana"]
+    end
+
+    subgraph MAINTENANCE["⚙️ Automated maintenance (systemd)"]
+        ADS_TIMER["update-unbound-ads.timer\nWeekly — pgl.yoyo.org"]
+        ROOTS_TIMER["update-unbound-roots.timer\nMonthly — internic.net"]
+        ANCHOR_TIMER["unbound-anchor.timer\nDaily — DNSSEC root key"]
+    end
+
+    %% DoH flow (ECH-capable browser)
+    LIBREOLF -->|"HTTPS — doh.lan:443"| CADDY
+    CADDY -->|"HTTP plain — 127.0.0.1:8053"| UNBOUND
+
+    %% Classic DNS flow
+    APP -->|"DNS UDP/TCP — 127.0.0.1:53"| UNBOUND
+
+    %% Internal Unbound decisions
+    UNBOUND --> ADBLOCK
+    UNBOUND --> DNSSEC
+    UNBOUND --> CACHE
+    UNBOUND --> QMIN
+
+    %% Encrypted upstream resolution
+    QMIN -->|"DoT TLS:853\nTLS verified — /etc/ssl/ca-bundle.pem"| QUAD9_1
+    QMIN -->|"DoT TLS:853"| QUAD9_6
+
+    %% Response return path
+    QUAD9_1 -->|"Encrypted response"| DNSSEC
+    QUAD9_6 -->|"Encrypted response"| DNSSEC
+    DNSSEC -->|"✅ Valid → cache\n❌ Bogus → rejected"| CACHE
+    CACHE -->|"Final response"| APP
+    CACHE -->|"Final response"| CADDY
+
+    %% Monitoring
+    UNBOUND -->|"stats"| EXPORTER
+    EXPORTER --> PROMETHEUS
+    PROMETHEUS --> GRAFANA
+
+    %% Maintenance
+    ADS_TIMER -->|"reload"| UNBOUND
+    ROOTS_TIMER -->|"reload"| UNBOUND
+    ANCHOR_TIMER -->|"update"| UNBOUND
+
+    %% Styles
+    classDef client fill:#1e3a5f,stroke:#4a9eff,color:#fff
+    classDef stack fill:#1a2e1a,stroke:#73BA25,color:#fff
+    classDef upstream fill:#2d1a1a,stroke:#ff6b35,color:#fff
+    classDef monitoring fill:#1a1a2e,stroke:#9b59b6,color:#fff
+    classDef maintenance fill:#2d2d1a,stroke:#f1c40f,color:#fff
+    classDef decision fill:#0d1117,stroke:#73BA25,color:#73BA25
+
+    class APP,LIBREOLF client
+    class CADDY,UNBOUND stack
+    class ADBLOCK,DNSSEC,CACHE,QMIN decision
+    class QUAD9_1,QUAD9_6 upstream
+    class EXPORTER,PROMETHEUS,GRAFANA monitoring
+    class ADS_TIMER,ROOTS_TIMER,ANCHOR_TIMER maintenance
+```
+
+> **Reading the diagram:** A DNS query enters from the top (classic `:53` or DoH via Caddy).  
+> Unbound first checks the ad-block list (→ instant NXDOMAIN if matched), then validates DNSSEC,  
+> checks the local cache, and only sends upstream over **encrypted DoT** if the answer is not cached.  
+> No plaintext DNS query ever leaves the system.
+
+---
+
 ## System requirements
 
 | Component | Version |
