@@ -31,75 +31,27 @@ The diagram below shows how a DNS query travels through the full stack, what dec
 
 ```mermaid
 flowchart TD
-    LIBREOLF["LibreWolf / Chromium<br/>ECH enabled"]
-    APP["Application<br/>curl, dig, system resolver"]
-    CADDY["Caddy<br/>doh.lan - HTTPS port 443<br/>TLS termination"]
-    UNBOUND["Unbound resolver<br/>port 53 UDP/TCP<br/>port 8053 DoH loopback"]
-    ADBLOCK{"Domain in<br/>ad-block list?"}
-    NXDOMAIN["NXDOMAIN returned<br/>query blocked"]
-    CACHE{"In local<br/>cache?"}
-    CACHED["Cached response<br/>returned immediately"]
-    QMIN["QNAME Minimisation<br/>query prepared"]
-    QUAD9["Quad9<br/>9.9.9.9 port 853 DoT<br/>149.112.112.112 port 853 DoT"]
-    QUAD9V6["Quad9 IPv6<br/>2620:fe::fe port 853 DoT<br/>2620:fe::9 port 853 DoT"]
-    DNSSEC{"DNSSEC<br/>validation"}
-    REJECTED["Query rejected<br/>bogus response"]
-    STORED["Response stored<br/>in cache"]
-    RESPONSE["Validated response<br/>returned to client"]
-    EXPORTER["unbound_exporter<br/>port 9167"]
-    PROMETHEUS["Prometheus"]
-    GRAFANA["Grafana"]
-    ADS["update-unbound-ads<br/>Weekly - pgl.yoyo.org"]
-    ROOTS["update-unbound-roots<br/>Monthly - internic.net"]
-    ANCHOR["unbound-anchor<br/>Daily - DNSSEC root key"]
+    A[Browser with DoH] -->|HTTPS doh.lan| B[Caddy - TLS termination]
+    C[Application - plain DNS] -->|UDP/TCP port 53| D
 
-    LIBREOLF -->|"HTTPS doh.lan port 443"| CADDY
-    CADDY -->|"HTTP port 8053 loopback"| UNBOUND
-    APP -->|"DNS port 53"| UNBOUND
+    B -->|HTTP port 8053| D[Unbound resolver]
 
-    UNBOUND --> ADBLOCK
-    ADBLOCK -->|"Yes"| NXDOMAIN
-    ADBLOCK -->|"No"| CACHE
+    D --> E{Ad-block list?}
+    E -->|Domain blocked| F[NXDOMAIN returned]
+    E -->|Domain allowed| G{Cache hit?}
 
-    CACHE -->|"Hit"| CACHED
-    CACHE -->|"Miss"| QMIN
+    G -->|Yes| H[Return cached response]
+    G -->|No| I[Send query upstream]
 
-    QMIN -->|"DoT port 853 - TLS verified"| QUAD9
-    QMIN -->|"DoT port 853 - TLS verified"| QUAD9V6
+    I -->|DNS over TLS port 853| J[Quad9 - 9.9.9.9]
 
-    QUAD9 --> DNSSEC
-    QUAD9V6 --> DNSSEC
+    J --> K[Encrypted response received]
+    K --> L{DNSSEC valid?}
 
-    DNSSEC -->|"Valid"| STORED
-    DNSSEC -->|"Bogus"| REJECTED
-    STORED --> RESPONSE
+    L -->|Valid| M[Store in cache]
+    L -->|Bogus| N[Query rejected]
 
-    UNBOUND -->|"stats"| EXPORTER
-    EXPORTER --> PROMETHEUS
-    PROMETHEUS --> GRAFANA
-
-    ADS -->|"reload"| UNBOUND
-    ROOTS -->|"reload"| UNBOUND
-    ANCHOR -->|"update"| UNBOUND
-
-    classDef browser fill:#1e3a5f,stroke:#4a9eff,color:#fff
-    classDef proxy fill:#1a2d3a,stroke:#00ADD8,color:#fff
-    classDef resolver fill:#1a2e1a,stroke:#73BA25,color:#fff
-    classDef decision fill:#2d2d1a,stroke:#f1c40f,color:#fff
-    classDef blocked fill:#3a1a1a,stroke:#e74c3c,color:#fff
-    classDef upstream fill:#2d1a1a,stroke:#ff6b35,color:#fff
-    classDef ok fill:#1a3a1a,stroke:#27ae60,color:#fff
-    classDef monitoring fill:#1a1a2e,stroke:#9b59b6,color:#fff
-    classDef maintenance fill:#2d2a1a,stroke:#f39c12,color:#fff
-
-    class LIBREOLF,APP browser
-    class CADDY proxy
-    class UNBOUND,QMIN,CACHED,STORED,RESPONSE resolver
-    class ADBLOCK,CACHE,DNSSEC decision
-    class NXDOMAIN,REJECTED blocked
-    class QUAD9,QUAD9V6 upstream
-    class EXPORTER,PROMETHEUS,GRAFANA monitoring
-    class ADS,ROOTS,ANCHOR maintenance
+    M --> O[Return validated response]
 ```
 
 > **Reading the diagram:** A DNS query enters from the top (classic `:53` or DoH via Caddy).  
