@@ -25,6 +25,42 @@ Key design goals:
 
 ---
 
+## Architecture — DNS Privacy Stack
+
+The diagram below shows how a DNS query travels through the full stack, what decisions are made at each step, and which protocols are used.
+
+```mermaid
+flowchart TD
+    A[Browser with DoH] -->|HTTPS doh.lan| B[Caddy - TLS termination]
+    C[Application - plain DNS] -->|UDP/TCP port 53| D
+
+    B -->|HTTP port 8053| D[Unbound resolver]
+
+    D --> E{Ad-block list?}
+    E -->|Domain blocked| F[NXDOMAIN returned]
+    E -->|Domain allowed| G{Cache hit?}
+
+    G -->|Yes| H[Return cached response]
+    G -->|No| I[Send query upstream]
+
+    I -->|DNS over TLS port 853| J[Quad9 - 9.9.9.9]
+
+    J --> K[Encrypted response received]
+    K --> L{DNSSEC valid?}
+
+    L -->|Valid| M[Store in cache]
+    L -->|Bogus| N[Query rejected]
+
+    M --> O[Return validated response]
+```
+
+> **Reading the diagram:** A DNS query enters from the top (classic `:53` or DoH via Caddy).  
+> Unbound first checks the ad-block list (→ instant NXDOMAIN if matched), then validates DNSSEC,  
+> checks the local cache, and only sends upstream over **encrypted DoT** if the answer is not cached.  
+> No plaintext DNS query ever leaves the system.
+
+---
+
 ## System requirements
 
 | Component | Version |
