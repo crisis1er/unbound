@@ -31,18 +31,18 @@ The diagram below shows how a DNS query travels through the full stack, what dec
 
 ```mermaid
 flowchart TD
-    classDef client fill:#1a202c,stroke:#a0aec0,stroke-width:2px,color:#fff
-    classDef kvm fill:#1a202c,stroke:#68d391,stroke-width:2px,color:#fff
-    classDef proxy fill:#3c4ab0,stroke:#c3dafe,stroke-width:2px,color:#fff
-    classDef resolver fill:#1a4731,stroke:#9ae6b4,stroke-width:2px,color:#fff
-    classDef decision fill:#7b1d1d,stroke:#fc8181,stroke-width:2px,color:#fff
-    classDef blocked fill:#4a1010,stroke:#fc8181,stroke-width:2px,color:#fff
-    classDef cache fill:#1a3a6b,stroke:#90cdf4,stroke-width:2px,color:#fff
-    classDef local fill:#3b2070,stroke:#d6bcfa,stroke-width:2px,color:#fff
-    classDef upstream fill:#1a5c38,stroke:#c6f6d5,stroke-width:2px,color:#fff
-    classDef monitoring fill:#1a5c5a,stroke:#b2f5ea,stroke-width:2px,color:#fff
-    classDef logs fill:#4a2800,stroke:#fbd38d,stroke-width:2px,color:#fff
-    classDef maintenance fill:#1a1800,stroke:#f39c12,stroke-width:2px,color:#fff
+    classDef client fill:#e2e8f0,stroke:#4a5568,stroke-width:2px,color:#1a202c
+    classDef kvm fill:#c6f6d5,stroke:#276749,stroke-width:2px,color:#1a202c
+    classDef proxy fill:#c3dafe,stroke:#3c4ab0,stroke-width:2px,color:#1a202c
+    classDef resolver fill:#9ae6b4,stroke:#276749,stroke-width:2px,color:#1a202c
+    classDef decision fill:#fed7d7,stroke:#c53030,stroke-width:2px,color:#1a202c
+    classDef blocked fill:#fc8181,stroke:#9b2c2c,stroke-width:2px,color:#1a202c
+    classDef cache fill:#bee3f8,stroke:#2b6cb0,stroke-width:2px,color:#1a202c
+    classDef local fill:#e9d8fd,stroke:#553c9a,stroke-width:2px,color:#1a202c
+    classDef upstream fill:#b2f5ea,stroke:#2c7a7b,stroke-width:2px,color:#1a202c
+    classDef monitoring fill:#b2f5ea,stroke:#319795,stroke-width:2px,color:#1a202c
+    classDef logs fill:#fbd38d,stroke:#744210,stroke-width:2px,color:#1a202c
+    classDef maintenance fill:#fefcbf,stroke:#b7791f,stroke-width:2px,color:#1a202c
 
     BROWSER["Browser - ECH enabled"]:::client
     CADDY["Caddy - doh.lan HTTPS port 443"]:::proxy
