@@ -2,6 +2,15 @@
 
 ---
 
+## [2.1] — 2026-04-06
+
+### Added
+- IPv6 LAN access-control for KVM guest DNS resolution over bridge network
+- Allows KVM guests to use Unbound as IPv6 DNS resolver (placeholder: `YOUR_LAN_IPV6_PREFIX/64`)
+- Previously only IPv4 LAN was explicitly allowed — IPv6 guests were refused
+
+---
+
 ## [2.0] — 2026-04-04
 
 ### Added
