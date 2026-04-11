@@ -1,0 +1,29 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Backup files
+*.bak
+*.orig
+*.tmp
+
+# openSUSE / Linux
+/var/
+/run/
+/tmp/
+
+# Sensitive local config (never commit secrets)
+*.key
+*.pem
+*.crt
+local.d/*.private

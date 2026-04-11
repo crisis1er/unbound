@@ -2,7 +2,7 @@
 
 ![Unbound](https://img.shields.io/badge/Unbound-1.x-0078D4)
 ![Platform](https://img.shields.io/badge/platform-openSUSE%20Tumbleweed-73BA25)
-![License](https://img.shields.io/badge/license-MIT-green)
+![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![DNSSEC](https://img.shields.io/badge/DNSSEC-validated-blue)
 ![DoT](https://img.shields.io/badge/DNS--over--TLS-Quad9-purple)
 ![DoH](https://img.shields.io/badge/DoH-local%20Caddy-00ADD8)
@@ -337,4 +337,4 @@ Please include your Unbound version (`unbound -V`) and openSUSE version in bug r
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
+GPL-3.0 License — see [LICENSE](LICENSE) for details.
