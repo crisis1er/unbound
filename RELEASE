@@ -1,6 +1,6 @@
 # RELEASE — unbound-tumbleweed-config
 
-Version:  v2.2
+Version:  v2.3
 Date:     2026-04-24
 Platform: openSUSE Tumbleweed
 Unbound:  1.x
@@ -8,6 +8,15 @@ Unbound:  1.x
 ---
 
 ## What's in this release
+
+### v2.3 — OISD Full + 127.0.0.1 everywhere
+- `scripts/update-unbound-ads.sh` — new conversion script
+  - Downloads OISD Full (~329,000 domains) and converts all `always_null` → `redirect + local-data A 127.0.0.1`
+  - Eliminates `0.0.0.0` from all DNS block responses (CVE-2024 "0.0.0.0 Day" mitigation)
+- `systemd-units/update-unbound-ads.service` — calls the conversion script; switched from Peter Lowe to OISD Full
+- `local.d/custom-blocks.conf` — all entries now use `redirect + local-data A 127.0.0.1`; 10 new manual blocks added
+
+---
 
 ### v2.2 — Manual blocklist + logrotate fix
 - `local.d/custom-blocks.conf` — manual domain blocklist, independent of the pgl.yoyo.org list
@@ -36,7 +45,7 @@ Unbound:  1.x
 - `edns-tcp-keepalive` — persistent TLS connections to Quad9
 
 ### Automated maintenance (systemd units)
-- `update-unbound-ads` — weekly ad list update from pgl.yoyo.org
+- `update-unbound-ads` — weekly ad list update from OISD Full (329,000 domains, 127.0.0.1)
 - `update-unbound-roots` — monthly root hints update from internic.net
 - `unbound-anchor` — daily DNSSEC root trust anchor update
 
@@ -49,6 +58,7 @@ Unbound:  1.x
 | Listen port    | 53 (DNS) / 8053 (DoH)         |
 | Upstream       | Quad9 9.9.9.9:853 DoT         |
 | DNSSEC         | Full validation, strict mode   |
-| Ad blocking    | pgl.yoyo.org (~3500 domains)   |
+| Ad blocking    | OISD Full (~329,000 domains)   |
+| Block response | 127.0.0.1 (loopback)          |
 | Threads        | 4                              |
 | Cache total    | ~170 MB                        |

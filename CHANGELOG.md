@@ -2,6 +2,28 @@
 
 ---
 
+## [2.3] — 2026-04-24
+
+### Changed
+- `systemd-units/update-unbound-ads.service` — now calls `scripts/update-unbound-ads.sh` instead of direct curl
+  - Switched from Peter Lowe (~3,500 domains) to OISD Full (~329,000 domains)
+  - All blocked domains return `127.0.0.1` instead of `0.0.0.0`
+- `local.d/custom-blocks.conf` — all entries converted from `always_null` to `redirect + local-data A 127.0.0.1`
+  - Added 10 new manual blocks (bnc.lt, kochava.com, clevertap-prod.com, greatis.com, cookielaw.org,
+    privacy-mgmt.com, zenaps.com, partnerstack.com, s.youtube.com, ngfts.lge.com)
+  - Removed `unityads.unity3d.com` (now covered by OISD Full)
+
+### Added
+- `scripts/update-unbound-ads.sh` — download + convert OISD Full blocklist
+  - Converts `always_null` → `redirect + local-data A 127.0.0.1` via inline Python
+  - Rationale: `always_null` returns `0.0.0.0` — ambiguous across OSes and known browser exploit vector
+    ("0.0.0.0 Day" 2024 — SSRF bypass via DNS response). `127.0.0.1` returns loopback universally.
+
+### Security
+- Eliminated `0.0.0.0` from all DNS block responses — all 328,922 OISD entries now return `127.0.0.1`
+
+---
+
 ## [2.2] — 2026-04-24
 
 ### Added
