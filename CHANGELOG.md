@@ -2,6 +2,21 @@
 
 ---
 
+## [2.2] — 2026-04-24
+
+### Added
+- `local.d/custom-blocks.conf` — manual blocklist file, separate from pgl.yoyo.org list (survives updates)
+  - `unityads.unity3d.com` — blocks all Unity Ads subdomains (webview, configv2, etc.)
+  - `cookiebot.com` — blocks Cookiebot/Cybot consent tracking CDN
+- `logrotate.d/unbound` — logrotate configuration for `/var/log/unbound.log`
+
+### Changed
+- `unbound.conf` — added `include` for `local.d/custom-blocks.conf`
+- `logrotate.d/unbound` — fixed `postrotate`: replaced `systemctl reload unbound` with `unbound-control log_reopen`
+  - Previous behavior caused Unbound to keep writing to the rotated file after log rotation, resulting in empty log file read by Alloy/Loki (no data in Grafana live panels)
+
+---
+
 ## [2.1] — 2026-04-06
 
 ### Added

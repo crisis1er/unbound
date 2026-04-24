@@ -1,7 +1,7 @@
 # RELEASE — unbound-tumbleweed-config
 
-Version:  v2.1
-Date:     2026-04-06
+Version:  v2.2
+Date:     2026-04-24
 Platform: openSUSE Tumbleweed
 Unbound:  1.x
 
@@ -9,7 +9,15 @@ Unbound:  1.x
 
 ## What's in this release
 
-### Complete production rewrite
+### v2.2 — Manual blocklist + logrotate fix
+- `local.d/custom-blocks.conf` — manual domain blocklist, independent of the pgl.yoyo.org list
+  - Blocks `unityads.unity3d.com` (all subdomains) and `cookiebot.com` tracking CDN
+- `logrotate.d/unbound` — fixed postrotate hook: `unbound-control log_reopen` instead of `systemctl reload`
+- `unbound.conf` — updated include directives
+
+---
+
+### v2.1 — Complete production rewrite
 - Full `unbound.conf` with detailed inline comments — every parameter documented
 - DoH endpoint `doh.lan` via `local.d/doh-local.conf` — port 8053 (proxied by Caddy)
 - Split DNS: local domains (bytel.fr, home.) forwarded to gateway without DNSSEC
