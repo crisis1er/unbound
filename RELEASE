@@ -1,13 +1,24 @@
 # RELEASE — unbound-tumbleweed-config
 
-Version:  v2.3
-Date:     2026-04-24
+Version:  v2.4
+Date:     2026-04-30
 Platform: openSUSE Tumbleweed
 Unbound:  1.x
 
 ---
 
 ## What's in this release
+
+### v2.4 — IPv6 block coverage + tracker expansion + Google admin UI whitelist
+- `local.d/custom-blocks.conf` — every block now returns both `127.0.0.1` (A) and `::1` (AAAA)
+  - Closes IPv6-first bypass — browsers querying AAAA only no longer leak around the block
+- 21 new manually blocked domains covering major ad networks (doubleclick, googleadservices,
+  adnxs, rubiconproject, taboola, outbrain, …) and analytics/measurement (google-analytics,
+  googletagmanager, scorecardresearch, fullstory, optimizely, …)
+- Google admin UI whitelist (3 `transparent` overrides) — Search Console, Analytics admin,
+  Tag Manager admin work normally without re-enabling third-party trackers
+
+---
 
 ### v2.3 — OISD Full + 127.0.0.1 everywhere
 - `scripts/update-unbound-ads.sh` — new conversion script
@@ -59,6 +70,6 @@ Unbound:  1.x
 | Upstream       | Quad9 9.9.9.9:853 DoT         |
 | DNSSEC         | Full validation, strict mode   |
 | Ad blocking    | OISD Full (~329,000 domains)   |
-| Block response | 127.0.0.1 (loopback)          |
+| Block response | 127.0.0.1 + ::1 (IPv4 + IPv6) |
 | Threads        | 4                              |
 | Cache total    | ~170 MB                        |

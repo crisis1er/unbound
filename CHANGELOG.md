@@ -2,6 +2,32 @@
 
 ---
 
+## [2.4] — 2026-04-30
+
+### Added
+- `local.d/custom-blocks.conf` — IPv6 (`AAAA ::1`) coverage on every blocked domain
+  - Previous entries returned `127.0.0.1` (IPv4) only — IPv6-first clients (browsers using AAAA-only)
+    bypassed the block silently. Now every entry returns both `127.0.0.1` and `::1`.
+- `local.d/custom-blocks.conf` — 21 new manually blocked tracker / ad-server domains:
+  - **Ad networks**: `doubleclick.net`, `ad.doubleclick.net`, `googleadservices.com`,
+    `amazon-adsystem.com`, `adform.net`, `adservice.google.com`, `adnxs.com`,
+    `rubiconproject.com`, `2mdn.net`, `outbrain.com`, `taboola.com`, `gumgum.com`
+  - **Trackers / measurement**: `google-analytics.com`, `googletagmanager.com`,
+    `scorecardresearch.com`, `everesttech.net`, `demdex.net`, `bluekai.com`,
+    `crwdcntrl.net`, `fullstory.com`, `optimizely.com`
+  - **Anti-adblock**: `blockadblock.com`
+- `local.d/custom-blocks.conf` — Google admin UI whitelist (3 `transparent` overrides)
+  - `analytics.google.com`, `tagmanager.google.com`, `search.google.com` — overrides OISD blocking
+    so Search Console, Google Analytics admin UI, and Tag Manager admin UI work normally
+  - **Distinction preserved**: tracker domains (`www.google-analytics.com`, `googletagmanager.com`)
+    remain blocked via redirect — only the first-party admin UIs are unblocked
+
+### Changed
+- `local.d/custom-blocks.conf` — formatting cleaned up: removed leading indentation on directives
+  for better readability
+
+---
+
 ## [2.3] — 2026-04-24
 
 ### Changed
