@@ -2,6 +2,20 @@
 
 ---
 
+## [2.4.1] — 2026-05-06
+
+### Fixed
+- `unbound.conf` — include order corrected: `zzz-overrides.conf` now loads **after** OISD
+  (`unbound_add_servers.conf`) so that `transparent` overrides properly supersede `always_null`
+  (Unbound keeps the last definition — earlier order was silently ineffective)
+- `local.d/zzz-overrides.conf` — new file: Google admin UI `transparent` overrides extracted
+  from `custom-blocks.conf` and placed in a dedicated file loaded last, ensuring OISD does not
+  re-block `analytics.google.com`, `tagmanager.google.com`, `search.google.com`
+- `local.d/custom-blocks.conf` — removed duplicate `gumgum.com` entry (already covered by OISD)
+  and moved Google admin UI overrides to `zzz-overrides.conf`
+
+---
+
 ## [2.4] — 2026-04-30
 
 ### Added
